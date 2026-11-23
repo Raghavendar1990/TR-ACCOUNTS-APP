@@ -9,7 +9,10 @@ Mobile-first personal ledger prototype for person-wise accounting. Telugu and En
 - History search and income/expense filters
 - Edit transaction, soft-delete to Recycle Bin, restore, permanent deletion
 - Person-wise statements with date range and opening balance, print/PDF, WhatsApp text share
-- Local JSON backup and restore
+- Local JSON backup and restore (proof attachments stored separately in IndexedDB)
+- Optional image/PDF proof attachments, 700 KB maximum
+- Separate business ledgers with income/expense entries
+- Partner records for share %, investments, profit and withdrawals
 - Telugu/English switch and AMOLED dark/light theme
 - Local PIN lock with hashed PIN and recovery code
 - PWA manifest and offline service-worker shell
@@ -19,9 +22,9 @@ Mobile-first personal ledger prototype for person-wise accounting. Telugu and En
 - Business account and partner/investment modules
 - Proof attachments (700 KB limit)
 - Final user-selected logo/photo
-- Native Android APK packaging
+- Native Android APK packaging prepared with a manual GitHub Actions build workflow (debug APK artifact)
 
-Cloud features are not active yet; current data is stored on the device/browser. Do not use this prototype as a sole financial record until backup and testing are complete.
+Cloud features are not active yet; current data is stored on the device/browser. Proof attachments are not included in JSON backup yet. Do not use this prototype as a sole financial record until backup and testing are complete.
 
 ## Validation
 GitHub Actions checks inline JavaScript syntax and the web manifest JSON on pushes and pull requests.
