@@ -14,7 +14,7 @@ Mobile-first person-wise and business accounting app. This repository is an acti
 - PWA manifest, offline service-worker shell, Capacitor Android setup, and debug APK workflow
 
 ## Not yet implemented or verified
-- Owner approval for second-device access
+- Owner-approved second-device access (implemented, testing pending)
 - Automated daily/weekly backup scheduling
 - Full test coverage and real-device validation
 - Final integration of the owner's original logo/photo
@@ -26,7 +26,7 @@ Local app data is saved in browser/device storage. Proof attachments are stored 
 Cloud sync is implemented in the client module but is not considered production-ready until Firebase configuration, authentication domains, Firestore rules, conflict behavior, and multi-device testing are verified.
 
 ## Firebase
-See [Firebase setup instructions](FIREBASE_SETUP.md). The current Firestore rules restrict users to documents keyed by their own authenticated UID; they do **not** implement owner-approved second-device access.
+See [Firebase setup instructions](FIREBASE_SETUP.md). The current Firestore rules support owner UID access and approved-device UIDs; publish the updated rules and test on two devices before relying on this feature.
 
 ## Debug APK
 The GitHub Actions workflow `.github/workflows/build-apk.yml` builds a debug APK and uploads it as the `TR-Accounts-debug-APK` artifact when it succeeds. The latest build has not been verified.
