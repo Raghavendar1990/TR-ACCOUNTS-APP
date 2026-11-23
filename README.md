@@ -28,6 +28,10 @@ Mobile-first personal and business ledger app. The repository currently contains
 ## Data and safety
 Current app data is saved locally in the browser/device. Proof attachments are stored separately and are not included in JSON backup. Cloud sync is not active. Do not rely on this prototype as the sole financial record until backups, testing, and cloud features are completed.
 
+## Firebase setup
+
+Follow [Firebase setup instructions](FIREBASE_SETUP.md) to configure Google sign-in and Firestore. Cloud features remain inactive until the project configuration is added.
+
 ## Debug APK workflow
 1. Open the repository on GitHub.
 2. Open **Actions** → **Build Android APK**.
