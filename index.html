@@ -144,7 +144,7 @@ function statementGenerate(){
  rows.forEach(x=>{if(x.type==="income"){inc+=x.amount;balance+=x.amount;}else{exp+=x.amount;balance-=x.amount;}html+='<div class="person"><div><b>'+escapeHTML(x.note)+'</b><div class="person-sub">'+escapeHTML(x.date||"")+' • '+escapeHTML(x.payment||"")+'</div></div><div class="amount '+x.type+'">'+(x.type==="income"?"+":"−")+money(x.amount)+'</div></div>';});
  html+='<div class="cards"><div class="card"><div class="metric-label">Income</div><div class="metric income">'+money(inc)+'</div></div><div class="card"><div class="metric-label">Expense</div><div class="metric expense">'+money(exp)+'</div></div><div class="card"><div class="metric-label">Closing</div><div class="metric balance">'+money(balance)+'</div></div></div>';
  document.getElementById("statementResult").innerHTML=html;
- window.currentStatementText="TR Accounts Statement - "+person+"\\nFrom: "+(from||"All")+" To: "+(to||"All")+"\\nOpening: "+money(opening)+"\\nIncome: "+money(inc)+"\\nExpense: "+money(exp)+"\\nClosing: "+money(balance)+"\\n\\n"+rows.map(x=>x.date+" | "+x.note+" | "+x.type+" | "+x.amount+" | "+x.payment).join("\\n");
+ window.currentStatementText="TR Accounts Statement - "+person+"\nFrom: "+(from||"All")+" To: "+(to||"All")+"\nOpening: "+money(opening)+"\nIncome: "+money(inc)+"\nExpense: "+money(exp)+"\nClosing: "+money(balance)+"\n\n"+rows.map(x=>x.date+" | "+x.note+" | "+x.type+" | "+x.amount+" | "+x.payment).join("\n");
 }
 function renderHistory(){
  const q=(document.getElementById("historySearch")?.value||"").toLowerCase();
