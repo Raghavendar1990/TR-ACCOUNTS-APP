@@ -9,6 +9,15 @@ const missing=!firebaseConfig||Object.values(firebaseConfig).some(v=>!v||String(
 let auth,db,currentUser=null,syncing=false,timer,lastCloudJSON=null,conflictPaused=false;
 function status(msg){if(notice)notice.textContent=msg;if(btn)btn.textContent=currentUser?"Sign out":"Google Login";}
 function jsonData(d){return JSON.stringify(d||{});}
+
+// Profile fields: Gmail is read-only from Google Auth; other fields are editable.
+const PROFILE_KEY="tr_accounts_profile_v1";
+function loadProfileLocal(){try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||"{}")}catch{return {}}}
+function fillProfile(p={}){const el=id=>document.getElementById(id);if(el("profileEmail"))el("profileEmail").value=p.email||"";if(el("profileName"))el("profileName").value=p.name||"";if(el("profilePhone"))el("profilePhone").value=p.phone||"";if(el("profileAge"))el("profileAge").value=p.age||"";if(el("profileGender"))el("profileGender").value=p.gender||"";}
+function profileFromFields(){return {name:(document.getElementById("profileName")?.value||"").trim(),phone:(document.getElementById("profilePhone")?.value||"").trim(),age:(document.getElementById("profileAge")?.value||"").trim(),gender:document.getElementById("profileGender")?.value||""};}
+function profileStatus(s){const el=document.getElementById("profileStatus");if(el)el.textContent=s;}
+function saveProfileLocal(p){localStorage.setItem(PROFILE_KEY,JSON.stringify(p));}
+
 function updatePhoneStatus(msg){const el=document.getElementById("phoneVerifyStatus");if(el)el.textContent=msg;}
 function normalizePhone(){let p=(document.getElementById("registerPhone")?.value||"").trim().replace(/[\\s-]/g,"");if(/^\\d{10}$/.test(p))p="+91"+p;else if(/^91\\d{10}$/.test(p))p="+"+p;return /^\\+91\\d{10}$/.test(p)?p:null;}
 let selfSmsCode=null,selfSmsPhone=null;
@@ -49,13 +58,14 @@ async function guardedUpload(force=false){
   console.error(err);status("Cloud sync failed. Local data is safe.");return false;
  }
 }
+document.getElementById("profileSave")?.addEventListener("click",async()=>{const p=profileFromFields(),email=auth?.currentUser?.email||document.getElementById("profileEmail")?.value||"";if(p.age&&!/^\d+$/.test(p.age)||Number(p.age)>120){profileStatus("Please enter a valid age.");return;}p.email=email;saveProfileLocal(p);const user=auth?.currentUser;if(user&&db){try{await setDoc(doc(db,"trAccountsUsers",user.uid),{profile:{name:p.name,phone:p.phone,age:p.age,gender:p.gender,email:user.email||""},profileUpdatedAt:serverTimestamp()},{merge:true});profileStatus("Profile saved to this device and Google account.");}catch(e){console.error(e);profileStatus("Saved locally. Cloud profile update failed.");}}else profileStatus("Profile saved on this device. Sign in to sync profile to Google.");});
 if(missing){status("Firebase configuration is missing. Data remains on this device.");}
 else{
  try{
   const app=initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);
   // Process a pending mobile redirect result as well as popup sign-in.
   getRedirectResult(auth).catch(e=>{if(e&&e.code!=="auth/no-auth-event")console.warn("Google redirect result:",e);});
-  onAuthStateChanged(auth,async user=>{currentUser=user||null;lastCloudJSON=null;conflictPaused=false;status(user?"Google account connected.":"Google Login");if(!user)return;await syncData();});
+  onAuthStateChanged(auth,async user=>{currentUser=user||null;lastCloudJSON=null;conflictPaused=false;status(user?"Google account connected.":"Google Login");if(!user){fillProfile(loadProfileLocal());return;}try{const pRef=doc(db,"trAccountsUsers",user.uid),pSnap=await getDoc(pRef),cloudProfile=pSnap.exists()?(pSnap.data().profile||{}):{},localProfile=loadProfileLocal();fillProfile({email:user.email||"",name:cloudProfile.name||localProfile.name||user.displayName||"",phone:cloudProfile.phone||localProfile.phone||"",age:cloudProfile.age||localProfile.age||"",gender:cloudProfile.gender||localProfile.gender||""});}catch(e){fillProfile({email:user.email||"",...loadProfileLocal()});}await syncData();});
   if(btn)btn.addEventListener("click",async()=>{
    if(currentUser){try{await signOut(auth);status("Signed out.");}catch(e){console.error(e);status("Sign out failed.");}return;}
    const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:"select_account"});
