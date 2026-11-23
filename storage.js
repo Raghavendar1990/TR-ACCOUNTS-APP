@@ -3,7 +3,7 @@
 (() => {
   "use strict";
   const KEY = "tr_accounts_data_v1";
-  const DEFAULTS = { people: [], transactions: [], language: "en", theme: "dark" };
+  const DEFAULTS = { people: [], transactions: [], recycleBin: [], language: "en", theme: "dark" };
 
   function load() {
     try {
@@ -13,6 +13,7 @@
       return {
         people: Array.isArray(parsed.people) ? parsed.people : [],
         transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
+        recycleBin: Array.isArray(parsed.recycleBin) ? parsed.recycleBin : [],
         language: parsed.language === "te" ? "te" : "en",
         theme: parsed.theme === "light" ? "light" : "dark"
       };
@@ -27,6 +28,7 @@
       localStorage.setItem(KEY, JSON.stringify({
         people: Array.isArray(data.people) ? data.people : [],
         transactions: Array.isArray(data.transactions) ? data.transactions : [],
+        recycleBin: Array.isArray(data.recycleBin) ? data.recycleBin : [],
         language: data.language === "te" ? "te" : "en",
         theme: data.theme === "light" ? "light" : "dark",
         updatedAt: new Date().toISOString()
