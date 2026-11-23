@@ -14,7 +14,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
       - run: mkdir -p web && cp index.html storage.js manifest.webmanifest sw.js cloud.js firebase-config.js web/ && cp -r icons web/icons
       - run: npm install
       - run: npx cap add android
