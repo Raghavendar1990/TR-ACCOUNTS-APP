@@ -95,7 +95,7 @@
     document.getElementById("allPeopleTitle").textContent=t("allPeople");
     document.getElementById("historyTitle").textContent=t("history");
     document.getElementById("historySub").textContent=t("historySub");
-    document.getElementById("historyEmpty").textContent=t("historyEmpty");
+    
     document.getElementById("statementPageTitle").textContent=t("statementPage");
     document.getElementById("statementPageSub").textContent=t("statementSub");
     document.getElementById("statementNote").textContent=t("statementNote");
@@ -132,7 +132,7 @@
   function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
   function openTxn(type){if(!people.length){alert(lang==="en"?"Add a person first.":"ముందుగా వ్యక్తిని జోడించండి.");return;}const s=document.getElementById("txnPerson");s.innerHTML=people.map(p=>`<option>${escapeHTML(p.name)}</option>`).join("");document.getElementById("txnType").value=type==="expense"?"expense":"income";document.getElementById("txnDate").value=new Date().toISOString().slice(0,10);document.getElementById("txnModal").classList.add("open");}
   function openPersonModal(){document.getElementById("modalBack").classList.add("open");document.getElementById("personInput").focus()}
-  document.querySelectorAll("[data-action]").forEach(btn=>btn.addEventListener("click",()=>{const action=btn.dataset.action;if(action==="person")openPersonModal();else openTxn(action)}));
+  document.querySelectorAll("[data-action]").forEach(btn=>btn.addEventListener("click",()=>{const action=btn.dataset.action;if(action==="person")openPersonModal();else if(action==="statement"){document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.getElementById("statementPage").classList.add("active");document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));document.querySelector("[data-page=statementPage]").classList.add("active");}else openTxn(action)}));
   document.addEventListener("click",e=>{const btn=e.target.closest("[data-person-action]");if(!btn)return;const index=Number(btn.dataset.personIndex);const person=people[index];if(!person)return;const action=btn.dataset.personAction;if(action==="rename"){const next=prompt(lang==="en"?"Enter new person name:":"కొత్త వ్యక్తి పేరు నమోదు చేయండి:",person.name);if(next&&next.trim()&&next.trim()!==person.name){person.name=next.trim();render()}}else if(action==="delete"){if(confirm(lang==="en"?"Delete "+person.name+"?":"ఈ వ్యక్తిని తొలగించాలా?")){people.splice(index,1);render()}}});
 document.addEventListener("click",e=>{
  const edit=e.target.closest("[data-txn-edit]"),del=e.target.closest("[data-txn-delete]"),restore=e.target.closest("[data-restore]"),perm=e.target.closest("[data-permanent]");
