@@ -17,7 +17,11 @@ service cloud.firestore {
         || (approvedDevice(uid)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['data', 'updatedAt']));
 
-      match /syncEntries/{entryId} {\n        allow read, write: if owner(uid) || approvedDevice(uid);\n      }\n\n      match /deviceRequests/{requestId} {
+      match /syncEntries/{entryId} {
+        allow read, write: if owner(uid) || approvedDevice(uid);
+      }
+
+      match /deviceRequests/{requestId} {
         allow create: if phoneVerified()
           && request.resource.data.requesterUid == request.auth.uid
           && request.resource.data.status == 'pending'
