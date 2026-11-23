@@ -165,7 +165,7 @@ document.addEventListener("click",e=>{
  if(edit){const x=transactions.find(a=>a.id==edit.dataset.txnEdit);if(!x)return;const note=prompt("Description:",x.note);if(note===null)return;const amount=Number(prompt("Amount:",x.amount));if(!note.trim()||!amount||amount<=0)return;x.note=note.trim();x.amount=amount;render();}
  if(del){const x=transactions.find(a=>a.id==del.dataset.txnDelete);if(x&&confirm("Move this transaction to Recycle Bin?")){transactions=transactions.filter(a=>a.id!==x.id);recycleBin.push({...x,deletedAt:new Date().toISOString()});render();}}
  if(restore){const x=recycleBin.find(a=>a.id==restore.dataset.restore);if(x){recycleBin=recycleBin.filter(a=>a.id!==x.id);delete x.deletedAt;transactions.push(x);render();}}
- if(perm){const x=recycleBin.find(a=>a.id==perm.dataset.permanent);if(x&&confirm("Permanently delete this transaction?")){recycleBin=recycleBin.filter(a=>a.id!==x.id);render();}}
+ if(perm){const x=recycleBin.find(a=>a.id==perm.dataset.permanent);if(x&&confirm("Permanently delete this transaction?")){if(x.attachmentId&&window.TRFiles)TRFiles.deleteProof(x.attachmentId);recycleBin=recycleBin.filter(a=>a.id!==x.id);render();}}
 });
   document.getElementById("cancelModal").onclick=()=>document.getElementById("modalBack").classList.remove("open");
   document.getElementById("savePerson").onclick=()=>{const name=document.getElementById("personInput").value.trim();if(!name)return;people.push({name});document.getElementById("personInput").value="";document.getElementById("modalBack").classList.remove("open");render()};
