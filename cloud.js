@@ -1,50 +1,20 @@
 /* TR Accounts Google Cloud module with conflict protection. Firebase client config is public. */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut, onAuthStateChanged, PhoneAuthProvider, RecaptchaVerifier, signInWithCredential } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut, onAuthStateChanged,  } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp, runTransaction, collection, addDoc, onSnapshot, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
 const btn=document.getElementById("cloudSetup");
 const notice=document.getElementById("moduleNotice");
 const missing=!firebaseConfig||Object.values(firebaseConfig).some(v=>!v||String(v).includes("YOUR_"));
-let auth,db,currentUser,syncing=false,timer,lastCloudJSON=null,conflictPaused=false,dataOwnerUid=null,requestListener=null,ownerRequestsListener=null,phoneVerificationId=null,recaptchaVerifier=null,verifiedPhone=null;
+let auth,db,currentUser,syncing=false,timer,lastCloudJSON=null,conflictPaused=false,dataOwnerUid=null,requestListener=null,ownerRequestsListener=null,selfSmsCode=null,selfSmsPhone=null;
 function status(msg){if(notice)notice.textContent=msg;if(btn)btn.textContent=currentUser?"Sign out":"Google Login";}
 function jsonData(d){return JSON.stringify(d||{});}
-function phoneVerifiedForThisDevice(){
- if(!currentUser)return false;
- const saved=localStorage.getItem("tr_accounts_phone_verified_"+currentUser.uid);
- return !!saved;
-}
+function phoneVerifiedForThisDevice(){return !!localStorage.getItem("tr_accounts_self_sms_verified_phone");}
 function updatePhoneStatus(msg){const el=document.getElementById("phoneVerifyStatus");if(el)el.textContent=msg;}
-async function sendPhoneOTP(){
- updatePhoneStatus("Checking mobile number…");
- let phone=(document.getElementById("registerPhone")?.value||"").trim().replace(/[\s-]/g,"");
- if(/^\d{10}$/.test(phone))phone="+91"+phone;
- else if(/^91\d{10}$/.test(phone))phone="+"+phone;
- if(!/^\+91\d{10}$/.test(phone)){updatePhoneStatus("Enter a valid 10-digit Indian mobile number.");return;}
- document.getElementById("registerPhone").value=phone.slice(3);
- try{
-  if(!recaptchaVerifier)recaptchaVerifier=new RecaptchaVerifier(auth,"phoneRecaptcha", {size:"invisible"});
-  phoneVerificationId=await new PhoneAuthProvider(auth).verifyPhoneNumber(phone,recaptchaVerifier);
-  verifiedPhone=phone;updatePhoneStatus("OTP sent to "+phone+". Enter the 6-digit code.");
- }catch(err){console.error("Phone OTP send:",err);updatePhoneStatus("OTP send failed: "+(err.code||err.message||"Please try again."));if(recaptchaVerifier){try{recaptchaVerifier.clear();}catch{}recaptchaVerifier=null;}}
-}
-async function verifyPhoneOTP(){
- if(!phoneVerificationId||!verifiedPhone){updatePhoneStatus("Tap Send OTP first.");return;}
- const code=(document.getElementById("phoneOTP")?.value||"").trim();
- if(!/^\\d{6}$/.test(code)){updatePhoneStatus("Enter the 6-digit OTP.");return;}
- try{
-  const credential=PhoneAuthProvider.credential(phoneVerificationId,code);
-  const result=await signInWithCredential(auth,credential);
-  currentUser=result.user;
-  localStorage.setItem("tr_accounts_phone_verified_"+currentUser.uid,verifiedPhone);
-  await currentUser.getIdToken(true);
-  updatePhoneStatus("Mobile login successful. Cloud sync is ready.");
-  status("Mobile Login successful.");
-  listenForOwnerRequests();
-  await syncData();
- }catch(err){console.error("Phone OTP verify:",err);updatePhoneStatus("Login failed: "+(err.code||err.message||"Check OTP and try again."));}
-}
+function normalizePhone(){let phone=(document.getElementById("registerPhone")?.value||"").trim().replace(/[\\s-]/g,"");if(/^\\d{10}$/.test(phone))phone="+91"+phone;else if(/^91\\d{10}$/.test(phone))phone="+"+phone;return /^\\+91\\d{10}$/.test(phone)?phone:null;}
+function sendSelfSms(){const phone=normalizePhone();if(!phone){updatePhoneStatus("Enter a valid 10-digit Indian mobile number.");return;}const code=String(Math.floor(100000+Math.random()*900000));selfSmsCode=code;selfSmsPhone=phone;const body="TR Accounts self-test code: "+code+". Send this SMS to your own number and enter the code in TR Accounts.";updatePhoneStatus("SMS composer opened. Send the message to your own number, then enter the code received.");window.location.href="sms:"+phone+"?body="+encodeURIComponent(body);}
+function verifySelfSms(){const phone=normalizePhone(),code=(document.getElementById("phoneOTP")?.value||"").trim();if(!selfSmsCode||!selfSmsPhone){updatePhoneStatus("Tap Send Self-Test SMS first.");return;}if(phone!==selfSmsPhone){updatePhoneStatus("The number changed. Start the self-test again.");return;}if(code!==selfSmsCode){updatePhoneStatus("Code mismatch. Read the received self-test SMS and try again.");return;}localStorage.setItem("tr_accounts_self_sms_verified_phone",phone);selfSmsCode=null;selfSmsPhone=null;updatePhoneStatus("Self-SMS check passed on this device. This is a local check, not secure phone ownership authentication.");}
 if(missing){status("Cloud: Firebase project config needed. App data remains local until configured.");}
 else{
  try{
@@ -52,13 +22,13 @@ else{
   onAuthStateChanged(auth,async user=>{
    currentUser=user||null;lastCloudJSON=null;conflictPaused=false;
    dataOwnerUid=localStorage.getItem("tr_accounts_owner_uid")||null;
-   if(!user){status("Mobile OTP Login");return;}
+   if(!user){status("Google Login");return;}
    const uidEl=document.getElementById("ownerUidDisplay");if(uidEl)uidEl.textContent=user.uid;
    const phoneEl=document.getElementById("registerPhone");
    const savedPhone=localStorage.getItem("tr_accounts_phone_verified_"+user.uid);
    if(phoneEl&&savedPhone)phoneEl.value=savedPhone;
    if(phoneVerifiedForThisDevice()){
-    updatePhoneStatus("Registered number verified on this device.");
+    updatePhoneStatus("Self-SMS check passed on this device. Local-only verification.");
     status("Mobile number verified. Cloud sync ready.");
     listenForOwnerRequests();
     await syncData();
@@ -92,9 +62,9 @@ else{
    catch(err){console.error(err);status("Approval failed. Publish updated Firestore rules first.");}
   }
   document.getElementById("requestDeviceBtn")?.addEventListener("click",requestOwnerApproval);
-  document.getElementById("sendPhoneOTP")?.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();sendPhoneOTP();});
-  document.getElementById("verifyPhoneOTP")?.addEventListener("click",verifyPhoneOTP);
-  document.getElementById("registerPhone")?.addEventListener("input",e=>{const saved=localStorage.getItem("tr_accounts_phone_verified_"+(currentUser?.uid||""));if(saved&&e.target.value.trim()!==saved){localStorage.removeItem("tr_accounts_phone_verified_"+currentUser.uid);updatePhoneStatus("Number changed. Verify the new number again before syncing.");}});
+  document.getElementById("sendPhoneOTP")?.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();sendSelfSms();});
+  document.getElementById("verifyPhoneOTP")?.addEventListener("click",verifySelfSms);
+  document.getElementById("registerPhone")?.addEventListener("input",e=>{const saved=localStorage.getItem("tr_accounts_self_sms_verified_phone");if(saved&&("+91"+e.target.value.trim())!==saved){localStorage.removeItem("tr_accounts_self_sms_verified_phone");updatePhoneStatus("Number changed. Repeat the self-SMS check.");}});
   async function syncData(){
    if(!currentUser||!phoneVerifiedForThisDevice()||syncing||!window.TRAccountsCloudData)return;
    syncing=true;
@@ -117,7 +87,7 @@ else{
    finally{syncing=false;}
   }
   async function guardedUpload(force=false){
-   if(!currentUser||!phoneVerifiedForThisDevice()||!window.TRAccountsCloudData){status("Verify your registered phone number before syncing.");return false;}
+   if(!currentUser||!phoneVerifiedForThisDevice()||!window.TRAccountsCloudData){status("Complete the self-SMS check on this device before syncing.");return false;}
    const ref=doc(db,"trAccountsUsers",dataOwnerUid||currentUser.uid),local=window.TRAccountsCloudData(),localJSON=jsonData(local);
    try{
     await runTransaction(db,async tx=>{
@@ -151,7 +121,7 @@ else{
   if(btn){btn.style.display="none";}
   const syncBtn=document.getElementById("cloudSyncNow");
   syncBtn?.addEventListener("click",async()=>{
-   if(!phoneVerifiedForThisDevice()){status("Verify mobile OTP before Cloud Sync.");updatePhoneStatus("Verification required before Cloud Sync.");return;}
+   if(!phoneVerifiedForThisDevice()){status("Complete the self-SMS check before Cloud Sync.");updatePhoneStatus("Self-SMS check required before Cloud Sync.");return;}
    if(syncing){status("Cloud sync is already running.");return;}
    syncing=true;status("Cloud: checking latest data…");
    try{await guardedUpload(false);}finally{syncing=false;}
