@@ -151,9 +151,20 @@ else{
     console.error(err);status("Cloud sync error; local copy saved.");return false;
    }
   }
-  btn?.addEventListener("click",async()=>{
-   if(currentUser){if(confirm("Sign out of Google Cloud?"))await signOut(auth);}
-   else try{const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:"select_account"});status("Opening Google sign-in…");await signInWithRedirect(auth,provider);}catch(err){console.error("Google sign-in redirect failed:",err);status("Google Login failed: "+(err.code||err.message||"Unknown error"));}
+  btn?.addEventListener("click",async(e)=>{
+   e.preventDefault();e.stopPropagation();
+   if(currentUser){if(confirm("Sign out of Google Cloud?"))await signOut(auth);return;}
+   const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:"select_account"});
+   status("Opening Google account chooser…");
+   try{
+    await signInWithPopup(auth,provider);
+   }catch(err){
+    console.error("Google popup sign-in:",err);
+    if(err.code==="auth/popup-blocked"||err.code==="auth/operation-not-supported-in-this-environment"||err.code==="auth/popup-closed-by-user"){
+     status("Popup unavailable. Trying Google redirect…");
+     try{await signInWithRedirect(auth,provider);}catch(redirectErr){console.error("Google redirect sign-in:",redirectErr);status("Google Login error: "+(redirectErr.code||redirectErr.message||"Unknown error"));}
+    }else status("Google Login error: "+(err.code||err.message||"Unknown error"));
+   }
   });
   const syncBtn=document.getElementById("cloudSyncNow");
   syncBtn?.addEventListener("click",async()=>{
