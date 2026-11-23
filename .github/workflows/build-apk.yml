@@ -15,7 +15,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - run: mkdir -p web && cp index.html storage.js manifest.webmanifest sw.js web/ && cp -r icons web/icons
+      - run: mkdir -p web && cp index.html storage.js manifest.webmanifest sw.js cloud.js firebase-config.js web/ && cp -r icons web/icons
       - run: npm install
       - run: npx cap add android
       - run: npx cap sync android
