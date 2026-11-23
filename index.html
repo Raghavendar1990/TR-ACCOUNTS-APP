@@ -93,6 +93,7 @@
     window.TRAccountsCloudData=()=>({people,transactions,recycleBin,businesses,businessTransactions,partners,partnerRecords,...(window.TRBusinessCloudData?window.TRBusinessCloudData():{}),language:lang,theme:document.body.classList.contains("light")?"light":"dark"});
     window.dispatchEvent(new CustomEvent("tr-accounts-data-updated"));
     document.querySelectorAll("[data-t]").forEach(el=>el.textContent=t(el.dataset.t));
+    const navPeople=document.querySelector('[data-page="peoplePage"] [data-t="people"]');if(navPeople)navPeople.textContent=localStorage.getItem("tr_account_mode_v1")==="business"?"Business":t("people");
     document.getElementById("tagline").textContent=t("tagline");
     document.getElementById("welcomeTitle").textContent=t("welcome");
     document.getElementById("welcomeSub").textContent=t("welcomeSub");
