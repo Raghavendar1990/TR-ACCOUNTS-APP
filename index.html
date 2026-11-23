@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#07111f">
+  <title>TR Accounts</title>
+  <style>
+    :root{--bg:#050b14;--panel:#0d1828;--panel2:#111f32;--text:#eef5ff;--muted:#9aabc2;--line:#203149;--blue:#2585ff;--cyan:#35d4e8;--green:#22c58b;--red:#ff6478;--shadow:0 18px 48px #0005}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh}
+    body.light{--bg:#f2f6fb;--panel:#fff;--panel2:#edf3fa;--text:#102139;--muted:#65758b;--line:#dbe5ef;--shadow:0 12px 30px #19385b12}
+    button,input{font:inherit}button{cursor:pointer;color:inherit;border:0} .app{max-width:1100px;margin:auto;padding:18px 16px 100px}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}.brand{display:flex;align-items:center;gap:11px}.logo{width:44px;height:44px;border-radius:15px;background:linear-gradient(145deg,#087cff,#36d8e5);display:grid;place-items:center;font-weight:900;color:white;box-shadow:0 8px 24px #168aff40}.brand h1{font-size:20px;margin:0;letter-spacing:.2px}.brand small{display:block;color:var(--muted);font-size:12px}.actions{display:flex;gap:8px}.iconbtn{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+    .welcome{margin-bottom:16px}.welcome h2{font-size:22px;margin:0 0 5px}.welcome p{margin:0;color:var(--muted)}
+    .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow)}.metric-label{color:var(--muted);font-size:13px}.metric{font-size:22px;font-weight:800;margin-top:7px}.metric.income{color:var(--green)}.metric.expense{color:var(--red)}.metric.balance{color:var(--cyan)}
+    .section{margin-top:20px}.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.section-head h3{margin:0;font-size:17px}.primary{background:linear-gradient(120deg,#087cff,#27b7df);padding:11px 15px;border-radius:12px;font-weight:700;color:white}.soft{background:var(--panel2);border:1px solid var(--line);padding:10px 13px;border-radius:12px}
+    .quick{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.quick button{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:15px 8px;text-align:center}.quick .emoji{font-size:22px;display:block;margin-bottom:6px}.quick span:last-child{font-size:12px}
+    .person-list,.activity{display:grid;gap:9px}.person{display:flex;align-items:center;justify-content:space-between;background:var(--panel);border:1px solid var(--line);padding:13px;border-radius:15px}.person-left{display:flex;align-items:center;gap:11px}.avatar{width:39px;height:39px;border-radius:13px;background:var(--panel2);display:grid;place-items:center;font-weight:800;color:var(--cyan)}.person-name{font-weight:700}.person-sub{color:var(--muted);font-size:12px}.amount{font-weight:700}.empty{color:var(--muted);padding:20px;text-align:center;border:1px dashed var(--line);border-radius:15px}
+    .nav{position:fixed;bottom:0;left:0;right:0;background:color-mix(in srgb,var(--panel) 94%,transparent);backdrop-filter:blur(14px);border-top:1px solid var(--line);padding:9px 8px calc(9px + env(safe-area-inset-bottom));display:flex;justify-content:center;z-index:5}.nav-inner{max-width:700px;width:100%;display:grid;grid-template-columns:repeat(5,1fr);gap:5px}.nav button{background:transparent;color:var(--muted);padding:8px 4px;border-radius:12px;font-size:11px}.nav button.active{color:var(--cyan);background:var(--panel2)}.nav .nicon{font-size:19px;display:block;margin-bottom:3px}
+    .page{display:none}.page.active{display:block}.modal-back{position:fixed;inset:0;background:#0009;display:none;align-items:flex-end;justify-content:center;z-index:10;padding:12px}.modal-back.open{display:flex}.modal{width:min(520px,100%);background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:20px}.modal h3{margin:0 0 14px}.field{display:grid;gap:6px;margin:12px 0}.field label{color:var(--muted);font-size:13px}.field input{width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--text)}.modal-actions{display:flex;gap:10px;margin-top:16px}.modal-actions button{flex:1}.notice{border:1px solid #2465a6;background:#102a45;color:#a8d6ff;padding:12px;border-radius:14px;font-size:13px;margin-top:14px}
+    @media(min-width:760px){.app{padding-top:28px}.cards{gap:16px}.card{padding:20px}.quick button{padding:20px}.nav{position:sticky;bottom:0;margin-top:-70px;background:transparent;border:0;pointer-events:none}.nav-inner{pointer-events:auto;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:7px;box-shadow:var(--shadow)}}
+    @media(max-width:420px){.cards{gap:8px}.card{padding:12px}.metric{font-size:18px}.welcome h2{font-size:20px}.quick{grid-template-columns:repeat(4,1fr)}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><div class="logo">TR</div><div><h1>TR Accounts</h1><small id="tagline">Personal & Business Ledger</small></div></div>
+    <div class="actions"><button class="iconbtn" id="langBtn" aria-label="Language">EN</button><button class="iconbtn" id="themeBtn" aria-label="Theme">☀️</button></div>
+  </header>
+
+  <main>
+    <section class="page active" id="dashboard">
+      <div class="welcome"><h2 id="welcomeTitle">Good day 👋</h2><p id="welcomeSub">Your accounts at a glance</p></div>
+      <div class="cards">
+        <div class="card"><div class="metric-label" data-t="income">Income</div><div class="metric income" id="incomeTotal">₹0</div></div>
+        <div class="card"><div class="metric-label" data-t="expense">Expense</div><div class="metric expense" id="expenseTotal">₹0</div></div>
+        <div class="card"><div class="metric-label" data-t="balance">Balance</div><div class="metric balance" id="balanceTotal">₹0</div></div>
+      </div>
+      <section class="section"><div class="section-head"><h3 id="quickTitle">Quick Actions</h3></div><div class="quick">
+        <button data-action="income"><span class="emoji">↙️</span><span data-t="addIncome">Add Income</span></button>
+        <button data-action="expense"><span class="emoji">↗️</span><span data-t="addExpense">Add Expense</span></button>
+        <button data-action="person"><span class="emoji">👤</span><span data-t="addPerson">Add Person</span></button>
+        <button data-action="statement"><span class="emoji">📄</span><span data-t="statement">Statement</span></button>
+      </div></section>
+      <section class="section"><div class="section-head"><h3 id="peopleTitle">People</h3><button class="soft" data-action="person" id="addPersonBtn">＋ Add</button></div><div class="person-list" id="personList"></div></section>
+      <section class="section"><div class="section-head"><h3 id="activityTitle">Recent Activity</h3></div><div id="activityList" class="activity"></div></section>
+    </section>
+
+    <section class="page" id="peoplePage"><div class="welcome"><h2 id="peoplePageTitle">People & Ledgers</h2><p id="peoplePageSub">Manage separate accounts person-wise</p></div><div class="section-head"><h3 id="allPeopleTitle">All People</h3><button class="primary" data-action="person">＋</button></div><div class="person-list" id="peopleFullList"></div></section>
+    <section class="page" id="historyPage"><div class="welcome"><h2 id="historyTitle">Transactions</h2><p id="historySub">Transaction history will appear here</p></div><div class="empty" id="historyEmpty">No transactions yet. Add your first transaction.</div></section>
+    <section class="page" id="statementPage"><div class="welcome"><h2 id="statementPageTitle">Statements</h2><p id="statementPageSub">Person-wise statement and reports</p></div><div class="card"><p id="statementNote">Statement tools (date range, opening balance, PDF export and WhatsApp share) will be added in the next modules.</p></div></section>
+    <section class="page" id="settingsPage"><div class="welcome"><h2 id="settingsTitle">Settings</h2><p id="settingsSub">App preferences and security</p></div><div class="card"><div class="section-head"><h3 id="settingsOrderTitle">Settings</h3></div><div class="person-list">
+      <div class="person"><div><b>1. P.M.</b><div class="person-sub" id="pmDesc">Person Management</div></div><button class="soft" data-action="person">Open</button></div>
+      <div class="person"><div><b>2. Lang</b><div class="person-sub" id="langDesc">Telugu / English</div></div><button class="soft" id="settingsLang">EN / తెలుగు</button></div>
+      <div class="person"><div><b>3. PIN</b><div class="person-sub" id="pinDesc">Security setup module</div></div><button class="soft" id="pinSoon">Setup</button></div>
+      <div class="person"><div><b>4. Backup</b><div class="person-sub" id="backupDesc">Local backup & restore</div></div><button class="soft" id="backupSoon">Open</button></div>
+    </div></div><div class="notice" id="moduleNotice">This is the first UI foundation. Data storage, authentication, PIN, backup, cloud sync and full transaction flows will be implemented in separate modules.</div></section>
+  </main>
+</div>
+
+<nav class="nav"><div class="nav-inner">
+  <button class="active" data-page="dashboard"><span class="nicon">⌂</span><span data-t="home">Home</span></button>
+  <button data-page="peoplePage"><span class="nicon">👥</span><span data-t="people">People</span></button>
+  <button data-page="historyPage"><span class="nicon">↔</span><span data-t="history">History</span></button>
+  <button data-page="statementPage"><span class="nicon">▤</span><span data-t="statement">Statement</span></button>
+  <button data-page="settingsPage"><span class="nicon">⚙</span><span data-t="settings">Settings</span></button>
+</div></nav>
+
+<div class="modal-back" id="modalBack"><div class="modal"><h3 id="modalTitle">Add Person</h3><div class="field"><label id="personLabel">Person name</label><input id="personInput" placeholder="Enter name" maxlength="60"></div><div class="modal-actions"><button class="soft" id="cancelModal">Cancel</button><button class="primary" id="savePerson">Save</button></div></div></div>
+<script>
+  const translations={
+    en:{tagline:"Personal & Business Ledger",welcome:"Good day 👋",welcomeSub:"Your accounts at a glance",income:"Income",expense:"Expense",balance:"Balance",quick:"Quick Actions",addIncome:"Add Income",addExpense:"Add Expense",addPerson:"Add Person",statement:"Statement",people:"People",activity:"Recent Activity",peoplePage:"People & Ledgers",peopleSub:"Manage separate accounts person-wise",allPeople:"All People",history:"History",historySub:"Transaction history will appear here",historyEmpty:"No transactions yet. Add your first transaction.",statementPage:"Statements",statementSub:"Person-wise statement and reports",statementNote:"Statement tools (date range, opening balance, PDF export and WhatsApp share) will be added in the next modules.",settings:"Settings",pmDesc:"Person Management",langDesc:"Telugu / English",pinDesc:"Security setup module",backupDesc:"Local backup & restore",moduleNotice:"This is the first UI foundation. Data storage, authentication, PIN, backup, cloud sync and full transaction flows will be implemented in separate modules.",add:"＋ Add",open:"Open",setup:"Setup",cancel:"Cancel",save:"Save",personName:"Person name",enterName:"Enter name",emptyPeople:"No people yet. Add your first person.",peopleCount:"people",ledger:"Person ledger",settingsOrder:"Settings",recentEmpty:"No recent entries yet."},
+    te:{tagline:"వ్యక్తిగత & వ్యాపార ఖాతాలు",welcome:"శుభదినం 👋",welcomeSub:"మీ ఖాతాల వివరాలు ఒకే చోట",income:"ఆదాయం",expense:"ఖర్చు",balance:"బ్యాలెన్స్",quick:"త్వరిత చర్యలు",addIncome:"ఆదాయం నమోదు",addExpense:"ఖర్చు నమోదు",addPerson:"వ్యక్తిని జోడించు",statement:"స్టేట్‌మెంట్",people:"వ్యక్తులు",activity:"ఇటీవలి లావాదేవీలు",peoplePage:"వ్యక్తులు & ఖాతాలు",peopleSub:"ప్రతి వ్యక్తికి వేర్వేరు ఖాతాలు",allPeople:"అందరూ",history:"చరిత్ర",historySub:"లావాదేవీల చరిత్ర ఇక్కడ కనిపిస్తుంది",historyEmpty:"ఇంకా లావాదేవీలు లేవు. మొదటి లావాదేవీ జోడించండి.",statementPage:"స్టేట్‌మెంట్లు",statementSub:"వ్యక్తివారీ స్టేట్‌మెంట్లు & రిపోర్టులు",statementNote:"తేదీలు, ప్రారంభ బ్యాలెన్స్, PDF మరియు WhatsApp షేర్ తదుపరి మాడ్యూళ్లలో జోడిస్తాం.",settings:"సెట్టింగ్స్",pmDesc:"వ్యక్తుల నిర్వహణ",langDesc:"తెలుగు / English",pinDesc:"భద్రత సెటప్",backupDesc:"లోకల్ బ్యాకప్ & రీస్టోర్",moduleNotice:"ఇది మొదటి UI పునాది. డేటా నిల్వ, లాగిన్, PIN, బ్యాకప్, క్లౌడ్ సింక్, పూర్తి లావాదేవీలను విడి మాడ్యూళ్లలో అమలు చేస్తాం.",add:"＋ జోడించు",open:"ఓపెన్",setup:"సెటప్",cancel:"రద్దు",save:"సేవ్",personName:"వ్యక్తి పేరు",enterName:"పేరు నమోదు చేయండి",emptyPeople:"ఇంకా వ్యక్తులు లేరు. మొదటి వ్యక్తిని జోడించండి.",peopleCount:"మంది",ledger:"వ్యక్తి ఖాతా",settingsOrder:"సెట్టింగ్స్",recentEmpty:"ఇటీవలి ఎంట్రీలు లేవు."}
+  };
+  let lang="en",people=[],transactions=[];
+  const money=n=>"₹"+Number(n||0).toLocaleString("en-IN");
+  function t(k){return translations[lang][k]||k}
+  function render(){
+    document.querySelectorAll("[data-t]").forEach(el=>el.textContent=t(el.dataset.t));
+    document.getElementById("tagline").textContent=t("tagline");
+    document.getElementById("welcomeTitle").textContent=t("welcome");
+    document.getElementById("welcomeSub").textContent=t("welcomeSub");
+    document.getElementById("quickTitle").textContent=t("quick");
+    document.getElementById("peopleTitle").textContent=t("people");
+    document.getElementById("activityTitle").textContent=t("activity");
+    document.getElementById("peoplePageTitle").textContent=t("peoplePage");
+    document.getElementById("peoplePageSub").textContent=t("peopleSub");
+    document.getElementById("allPeopleTitle").textContent=t("allPeople");
+    document.getElementById("historyTitle").textContent=t("history");
+    document.getElementById("historySub").textContent=t("historySub");
+    document.getElementById("historyEmpty").textContent=t("historyEmpty");
+    document.getElementById("statementPageTitle").textContent=t("statementPage");
+    document.getElementById("statementPageSub").textContent=t("statementSub");
+    document.getElementById("statementNote").textContent=t("statementNote");
+    document.getElementById("settingsTitle").textContent=t("settings");
+    document.getElementById("settingsOrderTitle").textContent=t("settingsOrder");
+    document.getElementById("pmDesc").textContent=t("pmDesc");
+    document.getElementById("langDesc").textContent=t("langDesc");
+    document.getElementById("pinDesc").textContent=t("pinDesc");
+    document.getElementById("backupDesc").textContent=t("backupDesc");
+    document.getElementById("moduleNotice").textContent=t("moduleNotice");
+    document.getElementById("addPersonBtn").textContent=t("add");
+    document.getElementById("langBtn").textContent=lang==="en"?"EN":"తెలుగు";
+    document.getElementById("personLabel").textContent=t("personName");
+    document.getElementById("personInput").placeholder=t("enterName");
+    document.getElementById("modalTitle").textContent=t("addPerson");
+    document.getElementById("cancelModal").textContent=t("cancel");
+    document.getElementById("savePerson").textContent=t("save");
+    document.getElementById("personList").innerHTML=people.length?people.slice(0,5).map(personHTML).join(""):'<div class="empty">'+t("emptyPeople")+'</div>';
+    document.getElementById("peopleFullList").innerHTML=people.length?people.map(personHTML).join(""):'<div class="empty">'+t("emptyPeople")+'</div>';
+    const income=transactions.filter(x=>x.type==="income").reduce((a,x)=>a+x.amount,0),expense=transactions.filter(x=>x.type==="expense").reduce((a,x)=>a+x.amount,0);
+    document.getElementById("incomeTotal").textContent=money(income);document.getElementById("expenseTotal").textContent=money(expense);document.getElementById("balanceTotal").textContent=money(income-expense);
+    document.getElementById("activityList").innerHTML=transactions.length?transactions.slice(-4).reverse().map(x=>'<div class="person"><div><b>'+escapeHTML(x.note)+'</b><div class="person-sub">'+escapeHTML(x.person||"")+'</div></div><div class="amount '+(x.type==="income"?"income":"expense")+'">'+(x.type==="income"?"+":"−")+money(x.amount)+'</div></div>':'<div class="empty">'+t("recentEmpty")+'</div>';
+  }
+  function personHTML(p){return '<div class="person"><div class="person-left"><div class="avatar">'+escapeHTML(p.name.slice(0,1).toUpperCase())+'</div><div><div class="person-name">'+escapeHTML(p.name)+'</div><div class="person-sub">'+t("ledger")+'</div></div></div><div class="amount">'+money(0)+'</div></div>'}
+  function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+  function openPersonModal(){document.getElementById("modalBack").classList.add("open");document.getElementById("personInput").focus()}
+  document.querySelectorAll("[data-action]").forEach(btn=>btn.addEventListener("click",()=>{const action=btn.dataset.action;if(action==="person")openPersonModal();else alert(lang==="en"?"Transaction entry module will be added next.":"లావాదేవీ నమోదు మాడ్యూల్ తదుపరి జోడిస్తాం.")}));
+  document.getElementById("cancelModal").onclick=()=>document.getElementById("modalBack").classList.remove("open");
+  document.getElementById("savePerson").onclick=()=>{const name=document.getElementById("personInput").value.trim();if(!name)return;people.push({name});document.getElementById("personInput").value="";document.getElementById("modalBack").classList.remove("open");render()};
+  document.getElementById("personInput").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("savePerson").click()});
+  document.getElementById("langBtn").onclick=()=>{lang=lang==="en"?"te":"en";render()};
+  document.getElementById("settingsLang").onclick=()=>document.getElementById("langBtn").click();
+  document.getElementById("themeBtn").onclick=()=>{document.body.classList.toggle("light");document.getElementById("themeBtn").textContent=document.body.classList.contains("light")?"🌙":"☀️"};
+  document.querySelectorAll("[data-page]").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.getElementById(btn.dataset.page).classList.add("active");document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));btn.classList.add("active")});
+  document.getElementById("pinSoon").onclick=()=>alert(lang==="en"?"PIN security will be built in a dedicated module.":"PIN భద్రత ప్రత్యేక మాడ్యూల్‌లో నిర్మిస్తాం.");
+  document.getElementById("backupSoon").onclick=()=>alert(lang==="en"?"Backup and restore will be built in a dedicated module.":"బ్యాకప్ & రీస్టోర్ ప్రత్యేక మాడ్యూల్‌లో నిర్మిస్తాం.");
+  render();
+</script>
+</body>
+</html>
