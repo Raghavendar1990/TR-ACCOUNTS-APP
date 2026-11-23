@@ -48,7 +48,6 @@ if(missing){status("Cloud: Firebase project config needed. App data remains loca
 else{
  try{
   const app=initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);
-  getRedirectResult(auth).then(result=>{if(result?.user)status("Google Login successful. Continue with phone verification.");}).catch(err=>{console.error("Google redirect sign-in:",err);status("Google Login error: "+(err.code||err.message||"Unknown error"));});
   getRedirectResult(auth).then(result=>{if(result?.user){currentUser=result.user;status("Google Login successful. Continue with phone verification.");}}).catch(err=>{console.error("Google redirect result error:",err);status("Google Login error: "+(err.code||err.message||"Unknown error"));});
   onAuthStateChanged(auth,async user=>{
    currentUser=user||null;lastCloudJSON=null;conflictPaused=false;
