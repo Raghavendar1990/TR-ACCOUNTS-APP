@@ -2,7 +2,8 @@ const CACHE_NAME = "tr-accounts-shell-v1";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./manifest.webmanifest"
+  "./manifest.webmanifest",
+  "./storage.js"
 ];
 
 self.addEventListener("install", (event) => {
