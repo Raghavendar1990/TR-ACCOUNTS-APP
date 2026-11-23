@@ -23,9 +23,17 @@ This setup is required before Google sign-in or Cloud sync can work. It must be 
 2. Replace placeholder strings with values from the Web app config. Keep the property names as shown.
 3. Commit the file. Firebase Web config values are public client identifiers; do not add service-account JSON or private keys to the app.
 
-## 5. Testing before using financial records
+## 5. Owner-approved second-device access
+1. Sign in on the owner's first device. The Settings page displays the owner's Firebase UID.
+2. On the second device, sign in with Google, open Settings, paste the first device's Owner UID, and tap **Request Owner Approval**.
+3. On the first device, Settings → Second Device Approval shows pending requests. Approve only a device you recognize.
+4. After approval, the second device connects to the owner's cloud ledger. The approval is saved for that device's Google UID.
+
+**Important:** Publish the updated `firestore.rules` file from this repository before testing this feature. Never approve an unknown device UID.
+
+## 6. Testing before using financial records
 - First test with an empty account and a small dummy entry.
 - Sign in on the owner's device and verify Cloud upload.
 - Do not test with important/real records until cloud sync, restore, permissions, and backup have been tested.
-- Owner approval for an additional device and Drive backup are **not implemented yet**. Firestore currently allows each signed-in UID to access only their own document.
+- Owner-approved second-device access is implemented in the app/rules but remains unverified until the updated Firestore rules are published and tested on two devices. Drive backup is not implemented.
 
