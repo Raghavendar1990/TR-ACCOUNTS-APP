@@ -17,7 +17,8 @@ function phoneVerifiedForThisDevice(){
 }
 function updatePhoneStatus(msg){const el=document.getElementById("phoneVerifyStatus");if(el)el.textContent=msg;}
 async function sendPhoneOTP(){
- if(!currentUser){status("Sign in with Google first.");return;}
+ updatePhoneStatus("Send OTP button tapped. Checking phone number and Firebase…");
+ if(!currentUser){status("Sign in with Google first.");updatePhoneStatus("Please sign in with Google first.");return;}
  const phone=(document.getElementById("registerPhone")?.value||"").trim();
  if(!/^\+[1-9]\d{7,14}$/.test(phone)){updatePhoneStatus("Enter phone number in international format, e.g. +919876543210.");return;}
  try{
@@ -90,7 +91,7 @@ else{
    catch(err){console.error(err);status("Approval failed. Publish updated Firestore rules first.");}
   }
   document.getElementById("requestDeviceBtn")?.addEventListener("click",requestOwnerApproval);
-  document.getElementById("sendPhoneOTP")?.addEventListener("click",sendPhoneOTP);
+  document.getElementById("sendPhoneOTP")?.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();sendPhoneOTP();});
   document.getElementById("verifyPhoneOTP")?.addEventListener("click",verifyPhoneOTP);
   document.getElementById("registerPhone")?.addEventListener("input",e=>{
    const saved=localStorage.getItem("tr_accounts_phone_verified_"+(currentUser?.uid||""));
