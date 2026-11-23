@@ -1,6 +1,6 @@
 /* TR Accounts Google Cloud module with conflict protection. Firebase client config is public. */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, PhoneAuthProvider, RecaptchaVerifier, signInWithCredential } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut, onAuthStateChanged, PhoneAuthProvider, RecaptchaVerifier, signInWithCredential } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp, runTransaction, collection, addDoc, onSnapshot, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
@@ -46,22 +46,21 @@ if(missing){status("Cloud: Firebase project config needed. App data remains loca
 else{
  try{
   const app=initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);
-  getRedirectResult(auth).then(result=>{if(result?.user){currentUser=result.user;status("Google Login successful. Continue with phone verification.");}}).catch(err=>{console.error("Google redirect result error:",err);status("Google Login error: "+(err.code||err.message||"Unknown error"));});
   onAuthStateChanged(auth,async user=>{
    currentUser=user||null;lastCloudJSON=null;conflictPaused=false;
    dataOwnerUid=localStorage.getItem("tr_accounts_owner_uid")||null;
-   if(!user){status("Google Login");return;}
+   if(!user){status("Mobile OTP Login");return;}
    const uidEl=document.getElementById("ownerUidDisplay");if(uidEl)uidEl.textContent=user.uid;
    const phoneEl=document.getElementById("registerPhone");
    const savedPhone=localStorage.getItem("tr_accounts_phone_verified_"+user.uid);
    if(phoneEl&&savedPhone)phoneEl.value=savedPhone;
    if(phoneVerifiedForThisDevice()){
     updatePhoneStatus("Registered number verified on this device.");
-    status("Google account and registered number verified.");
+    status("Mobile number verified. Cloud sync ready.");
     listenForOwnerRequests();
     await syncData();
    }else{
-    status("Google Login complete. Verify registered phone number to enable Cloud Sync.");
+    status("Verify mobile OTP to enable Cloud Sync.");
     updatePhoneStatus("Phone verification is required on every device before Cloud Sync.");
    }
   });
@@ -92,10 +91,6 @@ else{
   document.getElementById("requestDeviceBtn")?.addEventListener("click",requestOwnerApproval);
   document.getElementById("sendPhoneOTP")?.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();sendPhoneOTP();});
   document.getElementById("verifyPhoneOTP")?.addEventListener("click",verifyPhoneOTP);
-  document.getElementById("registerPhone")?.addEventListener("input",e=>{
-   const saved=localStorage.getItem("tr_accounts_phone_verified_"+(currentUser?.uid||""));
-   if(saved&&e.target.value.trim()!==saved){localStorage.removeItem("tr_accounts_phone_verified_"+currentUser.uid);updatePhoneStatus("Number changed. Verify the new number again before syncing.");}
-  });
   document.getElementById("registerPhone")?.addEventListener("input",e=>{const saved=localStorage.getItem("tr_accounts_phone_verified_"+(currentUser?.uid||""));if(saved&&e.target.value.trim()!==saved){localStorage.removeItem("tr_accounts_phone_verified_"+currentUser.uid);updatePhoneStatus("Number changed. Verify the new number again before syncing.");}});
   async function syncData(){
    if(!currentUser||!phoneVerifiedForThisDevice()||syncing||!window.TRAccountsCloudData)return;
@@ -153,8 +148,7 @@ else{
   if(btn){btn.style.display="none";}
   const syncBtn=document.getElementById("cloudSyncNow");
   syncBtn?.addEventListener("click",async()=>{
-   if(!currentUser){status("Please sign in to Google first.");return;}
-   if(!phoneVerifiedForThisDevice()){status("Verify your registered phone number before Cloud Sync.");updatePhoneStatus("Verification required before Cloud Sync.");return;}
+   if(!phoneVerifiedForThisDevice()){status("Verify mobile OTP before Cloud Sync.");updatePhoneStatus("Verification required before Cloud Sync.");return;}
    if(syncing){status("Cloud sync is already running.");return;}
    syncing=true;status("Cloud: checking latest data…");
    try{await guardedUpload(false);}finally{syncing=false;}
