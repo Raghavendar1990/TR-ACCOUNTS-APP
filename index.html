@@ -21,7 +21,8 @@
     .page{display:none}.page.active{display:block}.modal-back{position:fixed;inset:0;background:#0009;display:none;align-items:flex-end;justify-content:center;z-index:10;padding:12px}.modal-back.open{display:flex}.modal{width:min(520px,100%);background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:20px}.modal h3{margin:0 0 14px}.field{display:grid;gap:6px;margin:12px 0}.field label{color:var(--muted);font-size:13px}.field input{width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--text)}.modal-actions{display:flex;gap:10px;margin-top:16px}.modal-actions button{flex:1}.notice{border:1px solid #2465a6;background:#102a45;color:#a8d6ff;padding:12px;border-radius:14px;font-size:13px;margin-top:14px}
     @media(min-width:760px){.app{padding-top:28px}.cards{gap:16px}.card{padding:20px}.quick button{padding:20px}.nav{position:sticky;bottom:0;margin-top:-70px;background:transparent;border:0;pointer-events:none}.nav-inner{pointer-events:auto;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:7px;box-shadow:var(--shadow)}}
     @media(max-width:420px){.cards{gap:8px}.card{padding:12px}.metric{font-size:18px}.welcome h2{font-size:20px}.quick{grid-template-columns:repeat(4,1fr)}}
-  @media print{body{background:white;color:black}.nav,.top,.page:not(#statementPage),#statementPage .welcome,#statementPage .card>div.field,#statementPage .modal-actions,#statementWhatsApp{display:none!important}.app{padding:0;margin:0;max-width:none}.page{display:none!important}#statementPage{display:block!important}.card{border:0;box-shadow:none;background:white;color:black;padding:0}.person{border:0;border-bottom:1px solid #ddd;background:white;color:black}.metric-label,.person-sub{color:#333}}\n  </style>
+  @media print{body{background:white;color:black}.nav,.top,.page:not(#statementPage),#statementPage .welcome,#statementPage .card>div.field,#statementPage .modal-actions,#statementWhatsApp{display:none!important}.app{padding:0;margin:0;max-width:none}.page{display:none!important}#statementPage{display:block!important}.card{border:0;box-shadow:none;background:white;color:black;padding:0}.person{border:0;border-bottom:1px solid #ddd;background:white;color:black}.metric-label,.person-sub{color:#333}}
+  </style>
 </head>
 <body>
 <div class="app">
@@ -143,7 +144,15 @@ function statementGenerate(){
  rows.forEach(x=>{if(x.type==="income"){inc+=x.amount;balance+=x.amount;}else{exp+=x.amount;balance-=x.amount;}html+='<div class="person"><div><b>'+escapeHTML(x.note)+'</b><div class="person-sub">'+escapeHTML(x.date||"")+' • '+escapeHTML(x.payment||"")+'</div></div><div class="amount '+x.type+'">'+(x.type==="income"?"+":"−")+money(x.amount)+'</div></div>';});
  html+='<div class="cards"><div class="card"><div class="metric-label">Income</div><div class="metric income">'+money(inc)+'</div></div><div class="card"><div class="metric-label">Expense</div><div class="metric expense">'+money(exp)+'</div></div><div class="card"><div class="metric-label">Closing</div><div class="metric balance">'+money(balance)+'</div></div></div>';
  document.getElementById("statementResult").innerHTML=html;
- window.currentStatementText="TR Accounts Statement - "+person+"\nFrom: "+(from||"All")+" To: "+(to||"All")+"\nOpening: "+money(opening)+"\nIncome: "+money(inc)+"\nExpense: "+money(exp)+"\nClosing: "+money(balance)+"\n\n"+rows.map(x=>x.date+" | "+x.note+" | "+x.type+" | "+x.amount+" | "+x.payment).join("\n");
+ window.currentStatementText="TR Accounts Statement - "+person+"
+From: "+(from||"All")+" To: "+(to||"All")+"
+Opening: "+money(opening)+"
+Income: "+money(inc)+"
+Expense: "+money(exp)+"
+Closing: "+money(balance)+"
+
+"+rows.map(x=>x.date+" | "+x.note+" | "+x.type+" | "+x.amount+" | "+x.payment).join("
+");
 }
 function renderHistory(){
  const q=(document.getElementById("historySearch")?.value||"").toLowerCase();
@@ -158,7 +167,7 @@ function renderHistory(){
   function openTxn(type){if(!people.length){alert(lang==="en"?"Add a person first.":"ముందుగా వ్యక్తిని జోడించండి.");return;}const s=document.getElementById("txnPerson");s.innerHTML=people.map(p=>`<option>${escapeHTML(p.name)}</option>`).join("");document.getElementById("txnType").value=type==="expense"?"expense":"income";document.getElementById("txnDate").value=new Date().toISOString().slice(0,10);document.getElementById("txnModal").classList.add("open");}
   function openPersonModal(){document.getElementById("modalBack").classList.add("open");document.getElementById("personInput").focus()}
   document.querySelectorAll("[data-action]").forEach(btn=>btn.addEventListener("click",()=>{const action=btn.dataset.action;if(action==="person")openPersonModal();else if(action==="statement"){document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.getElementById("statementPage").classList.add("active");document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));document.querySelector("[data-page=statementPage]").classList.add("active");}else openTxn(action)}));
-  document.addEventListener("click",e=>{const btn=e.target.closest("[data-person-action]");if(!btn)return;const index=Number(btn.dataset.personIndex);const person=people[index];if(!person)return;const action=btn.dataset.personAction;if(action==="rename"){const next=prompt(lang==="en"?"Enter new person name:":"కొత్త వ్యక్తి పేరు నమోదు చేయండి:",person.name);if(next&&next.trim()&&next.trim()!==person.name){person.name=next.trim();render()}}else if(action==="delete"){if(confirm(lang==="en"?"Delete "+person.name+"?":"ఈ వ్యక్తిని తొలగించాలా?")){people.splice(index,1);render()}}});
+  document.addEventListener("click",e=>{const btn=e.target.closest("[data-person-action]");if(!btn)return;const index=Number(btn.dataset.personIndex);const person=people[index];if(!person)return;const action=btn.dataset.personAction;if(action==="rename"){const next=prompt(lang==="en"?"Enter new person name:":"కొత్త వ్యక్తి పేరు నమోదు చేయండి:",person.name);if(next&&next.trim()&&next.trim()!==person.name){const previous=person.name;person.name=next.trim();transactions.forEach(x=>{if(x.person===previous)x.person=person.name});recycleBin.forEach(x=>{if(x.person===previous)x.person=person.name});render()}}else if(action==="delete"){if(confirm(lang==="en"?"Delete "+person.name+"? Their transactions remain in History.":"ఈ వ్యక్తిని తొలగించాలా? వారి లావాదేవీలు చరిత్రలో ఉంటాయి.")){people.splice(index,1);render()}}});
 document.addEventListener("click",e=>{
  const edit=e.target.closest("[data-txn-edit]"),del=e.target.closest("[data-txn-delete]"),restore=e.target.closest("[data-restore]"),perm=e.target.closest("[data-permanent]");
  if(edit){const x=transactions.find(a=>a.id==edit.dataset.txnEdit);if(!x)return;const note=prompt("Description:",x.note);if(note===null)return;const amount=Number(prompt("Amount:",x.amount));if(!note.trim()||!amount||amount<=0)return;x.note=note.trim();x.amount=amount;render();}
