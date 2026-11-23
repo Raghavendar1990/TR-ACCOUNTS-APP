@@ -1,9 +1,10 @@
-const CACHE_NAME = "tr-accounts-shell-v1";
+const CACHE_NAME = "tr-accounts-shell-v2";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
   "./storage.js",
+  "./business-suite.js",
   "./icons/icon-192.svg",
   "./icons/icon-512.svg"
 ];
