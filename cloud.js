@@ -18,11 +18,11 @@ function phoneVerifiedForThisDevice(){
 function updatePhoneStatus(msg){const el=document.getElementById("phoneVerifyStatus");if(el)el.textContent=msg;}
 async function sendPhoneOTP(){
  updatePhoneStatus("Checking mobile number…");
- let phone=(document.getElementById("registerPhone")?.value||"").trim().replace(/[\\s-]/g,"");
- if(/^\\d{10}$/.test(phone))phone="+91"+phone;
- else if(/^91\\d{10}$/.test(phone))phone="+"+phone;
- if(!/^\\+91\\d{10}$/.test(phone)){updatePhoneStatus("Enter a valid 10-digit Indian mobile number.");return;}
- document.getElementById("registerPhone").value=phone.slice(3);}
+ let phone=(document.getElementById("registerPhone")?.value||"").trim().replace(/[\s-]/g,"");
+ if(/^\d{10}$/.test(phone))phone="+91"+phone;
+ else if(/^91\d{10}$/.test(phone))phone="+"+phone;
+ if(!/^\+91\d{10}$/.test(phone)){updatePhoneStatus("Enter a valid 10-digit Indian mobile number.");return;}
+ document.getElementById("registerPhone").value=phone.slice(3);
  try{
   if(!recaptchaVerifier)recaptchaVerifier=new RecaptchaVerifier(auth,"phoneRecaptcha", {size:"invisible"});
   phoneVerificationId=await new PhoneAuthProvider(auth).verifyPhoneNumber(phone,recaptchaVerifier);
