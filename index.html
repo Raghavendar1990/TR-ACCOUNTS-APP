@@ -56,7 +56,7 @@
       <div class="person"><div><b>2. Lang</b><div class="person-sub" id="langDesc">Telugu / English</div></div><button class="soft" id="settingsLang">EN / తెలుగు</button></div>
       <div class="person"><div><b>3. PIN</b><div class="person-sub" id="pinDesc">Security setup module</div></div><button class="soft" id="pinSoon">Setup</button></div>
       <div class="person"><div><b>4. Backup</b><div class="person-sub" id="backupDesc">Local backup & restore</div></div><button class="soft" id="backupSoon">Open</button></div>
-    </div></div><div class="notice" id="moduleNotice">This is the first UI foundation. Data storage, authentication, PIN, backup, cloud sync and full transaction flows will be implemented in separate modules.</div></section>
+    </div></div><input type="file" id="restoreFile" accept="application/json,.json" hidden><div class="notice" id="moduleNotice">This is the first UI foundation. Data storage, authentication, PIN, backup, cloud sync and full transaction flows will be implemented in separate modules.</div></section>
   </main>
 </div>
 
@@ -114,6 +114,7 @@
     document.getElementById("cancelModal").textContent=t("cancel");
     document.getElementById("savePerson").textContent=t("save");
     document.getElementById("personList").innerHTML=people.length?people.slice(0,5).map(personHTML).join(""):'<div class="empty">'+t("emptyPeople")+'</div>';
+    if(typeof refreshStatementPeople==="function")refreshStatementPeople();
     document.getElementById("peopleFullList").innerHTML=people.length?people.map(personHTML).join(""):'<div class="empty">'+t("emptyPeople")+'</div>';
     const income=transactions.filter(x=>x.type==="income").reduce((a,x)=>a+x.amount,0),expense=transactions.filter(x=>x.type==="expense").reduce((a,x)=>a+x.amount,0);
     document.getElementById("incomeTotal").textContent=money(income);document.getElementById("expenseTotal").textContent=money(expense);document.getElementById("balanceTotal").textContent=money(income-expense);
@@ -121,6 +122,11 @@
     document.getElementById("activityList").innerHTML=transactions.length?transactions.slice(-4).reverse().map(x=>'<div class="person"><div><b>'+escapeHTML(x.note)+'</b><div class="person-sub">'+escapeHTML(x.person||"")+'</div></div><div class="amount '+(x.type==="income"?"income":"expense")+'">'+(x.type==="income"?"+":"−")+money(x.amount)+'</div></div>':'<div class="empty">'+t("recentEmpty")+'</div>';
   }
   
+
+function backupExport(){const payload={app:"TR Accounts",version:1,exportedAt:new Date().toISOString(),people,transactions,recycleBin,language:lang,theme:document.body.classList.contains("light")?"light":"dark"};const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="TR-Accounts-Backup-"+new Date().toISOString().slice(0,10)+".json";a.click();URL.revokeObjectURL(url);}
+document.getElementById("backupSoon").onclick=()=>backupExport();
+document.getElementById("backupSoon").addEventListener("contextmenu",e=>{e.preventDefault();document.getElementById("restoreFile").click()});
+document.getElementById("restoreFile").addEventListener("change",async e=>{const file=e.target.files[0];if(!file)return;try{const data=JSON.parse(await file.text());if(!Array.isArray(data.people)||!Array.isArray(data.transactions))throw new Error("Invalid backup");if(!confirm("Restore backup? Current data will be replaced."))return;people=data.people;transactions=data.transactions;recycleBin=Array.isArray(data.recycleBin)?data.recycleBin:[];lang=data.language==="te"?"te":"en";if(data.theme==="light")document.body.classList.add("light");else document.body.classList.remove("light");render();alert("Backup restored.");}catch(err){alert("Backup file invalid.");}e.target.value="";});
 function statementGenerate(){
  const person=document.getElementById("statementPerson").value;
  const from=document.getElementById("statementFrom").value,to=document.getElementById("statementTo").value;
@@ -131,7 +137,15 @@ function statementGenerate(){
  rows.forEach(x=>{if(x.type==="income"){inc+=x.amount;balance+=x.amount;}else{exp+=x.amount;balance-=x.amount;}html+='<div class="person"><div><b>'+escapeHTML(x.note)+'</b><div class="person-sub">'+escapeHTML(x.date||"")+' • '+escapeHTML(x.payment||"")+'</div></div><div class="amount '+x.type+'">'+(x.type==="income"?"+":"−")+money(x.amount)+'</div></div>';});
  html+='<div class="cards"><div class="card"><div class="metric-label">Income</div><div class="metric income">'+money(inc)+'</div></div><div class="card"><div class="metric-label">Expense</div><div class="metric expense">'+money(exp)+'</div></div><div class="card"><div class="metric-label">Closing</div><div class="metric balance">'+money(balance)+'</div></div></div>';
  document.getElementById("statementResult").innerHTML=html;
- window.currentStatementText="TR Accounts Statement - "+person+"\nFrom: "+(from||"All")+" To: "+(to||"All")+"\nOpening: "+money(opening)+"\nIncome: "+money(inc)+"\nExpense: "+money(exp)+"\nClosing: "+money(balance)+"\n\n"+rows.map(x=>x.date+" | "+x.note+" | "+x.type+" | "+x.amount+" | "+x.payment).join("\n");
+ window.currentStatementText="TR Accounts Statement - "+person+"
+From: "+(from||"All")+" To: "+(to||"All")+"
+Opening: "+money(opening)+"
+Income: "+money(inc)+"
+Expense: "+money(exp)+"
+Closing: "+money(balance)+"
+
+"+rows.map(x=>x.date+" | "+x.note+" | "+x.type+" | "+x.amount+" | "+x.payment).join("
+");
 }
 function renderHistory(){
  const q=(document.getElementById("historySearch")?.value||"").toLowerCase();
@@ -163,7 +177,7 @@ document.addEventListener("click",e=>{
   document.getElementById("themeBtn").textContent=document.body.classList.contains("light")?"🌙":"☀️";
   document.querySelectorAll("[data-page]").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.getElementById(btn.dataset.page).classList.add("active");document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));btn.classList.add("active")});
   document.getElementById("pinSoon").onclick=()=>alert(lang==="en"?"PIN security will be built in a dedicated module.":"PIN భద్రత ప్రత్యేక మాడ్యూల్‌లో నిర్మిస్తాం.");
-  document.getElementById("backupSoon").onclick=()=>alert(lang==="en"?"Backup and restore will be built in a dedicated module.":"బ్యాకప్ & రీస్టోర్ ప్రత్యేక మాడ్యూల్‌లో నిర్మిస్తాం.");
+  document.getElementById("backupSoon").onclick=()=>backupExport();
 document.getElementById("txnCancel").onclick=()=>document.getElementById("txnModal").classList.remove("open");document.getElementById("txnSave").onclick=()=>{const amount=Number(document.getElementById("txnAmount").value),note=document.getElementById("txnNote").value.trim();if(amount<=0||!note){alert(lang==="en"?"Enter description and valid amount.":"వివరణ, సరైన మొత్తాన్ని నమోదు చేయండి.");return;}transactions.push({id:Date.now(),person:document.getElementById("txnPerson").value,type:document.getElementById("txnType").value,date:document.getElementById("txnDate").value,note,amount,payment:document.getElementById("txnPay").value});document.getElementById("txnAmount").value="";document.getElementById("txnNote").value="";document.getElementById("txnModal").classList.remove("open");render();};
 document.getElementById("historySearch").addEventListener("input",renderHistory);
 document.getElementById("historyAll").onclick=()=>{historyFilter="all";renderHistory()};
