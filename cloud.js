@@ -1,6 +1,6 @@
 /* TR Accounts Google Cloud module with conflict protection. Firebase client config is public. */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, PhoneAuthProvider, RecaptchaVerifier, linkWithCredential } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, PhoneAuthProvider, RecaptchaVerifier, linkWithCredential } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp, runTransaction, collection, addDoc, onSnapshot, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
@@ -48,6 +48,7 @@ if(missing){status("Cloud: Firebase project config needed. App data remains loca
 else{
  try{
   const app=initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);
+  getRedirectResult(auth).then(result=>{if(result?.user)status("Google Login successful. Continue with phone verification.");}).catch(err=>{console.error("Google redirect sign-in:",err);status("Google Login error: "+(err.code||err.message||"Unknown error"));});
   onAuthStateChanged(auth,async user=>{
    currentUser=user||null;lastCloudJSON=null;conflictPaused=false;
    dataOwnerUid=localStorage.getItem("tr_accounts_owner_uid")||null;
@@ -152,7 +153,7 @@ else{
   }
   btn?.addEventListener("click",async()=>{
    if(currentUser){if(confirm("Sign out of Google Cloud?"))await signOut(auth);}
-   else try{await signInWithPopup(auth,new GoogleAuthProvider());}catch(err){console.error(err);status("Google sign-in failed. Check authorized domains.");}
+   else try{const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:"select_account"});status("Opening Google sign-in…");await signInWithRedirect(auth,provider);}catch(err){console.error("Google sign-in redirect failed:",err);status("Google Login failed: "+(err.code||err.message||"Unknown error"));}
   });
   const syncBtn=document.getElementById("cloudSyncNow");
   syncBtn?.addEventListener("click",async()=>{
