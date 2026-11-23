@@ -97,11 +97,11 @@
     document.getElementById("welcomeTitle").textContent=t("welcome");
     document.getElementById("welcomeSub").textContent=t("welcomeSub");
     document.getElementById("quickTitle").textContent=t("quick");
-    document.getElementById("peopleTitle").textContent=t("people");
+    document.getElementById("peopleTitle").textContent=localStorage.getItem("tr_account_mode_v1")==="business"?"Businesses":t("people");
     document.getElementById("activityTitle").textContent=t("activity");
-    document.getElementById("peoplePageTitle").textContent=t("peoplePage");
-    document.getElementById("peoplePageSub").textContent=t("peopleSub");
-    document.getElementById("allPeopleTitle").textContent=t("allPeople");
+    document.getElementById("peoplePageTitle").textContent=localStorage.getItem("tr_account_mode_v1")==="business"?"Business Accounts":t("peoplePage");
+    document.getElementById("peoplePageSub").textContent=localStorage.getItem("tr_account_mode_v1")==="business"?"Manage separate accounts business-wise":t("peopleSub");
+    document.getElementById("allPeopleTitle").textContent=localStorage.getItem("tr_account_mode_v1")==="business"?"All Businesses":t("allPeople");
     document.getElementById("historyTitle").textContent=t("history");
     document.getElementById("historySub").textContent=t("historySub");
     
@@ -201,7 +201,7 @@ document.addEventListener("click",async e=>{
   document.getElementById("themeBtn").onclick=()=>{document.body.classList.toggle("light");document.getElementById("themeBtn").textContent=document.body.classList.contains("light")?"🌙":"☀️";render()};
   document.getElementById("themeBtn").textContent=document.body.classList.contains("light")?"🌙":"☀️";
   const openProfile=()=>{document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.getElementById("profilePage").classList.add("active");document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));};document.getElementById("profileLogo")?.addEventListener("click",openProfile);document.getElementById("profileLogo")?.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openProfile();}});
-  document.querySelectorAll("[data-page]").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.getElementById(btn.dataset.page).classList.add("active");document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));btn.classList.add("active")});
+  document.querySelectorAll("[data-page]").forEach(btn=>btn.onclick=()=>{const businessMode=localStorage.getItem("tr_account_mode_v1")==="business";const target=businessMode&&btn.dataset.page==="peoplePage"?"businessPage":btn.dataset.page; if(businessMode&&btn.dataset.page==="peoplePage"&&window.TRBusinessRender)window.TRBusinessRender();document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.getElementById(target).classList.add("active");document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));btn.classList.add("active")});
   document.getElementById("pinSoon").onclick=()=>pinSetup();
   // Personal/Business mode switching with dedicated PIN gate
   const dobInput=document.getElementById("profileDOB"),dobAgePreview=document.getElementById("profileAgePreview");
@@ -239,7 +239,7 @@ document.addEventListener("click",async e=>{
       if(entered!==saved){pinAttempts++;err.textContent="Incorrect PIN. Attempt "+pinAttempts+" of 5.";input.value="";if(pinAttempts>=5)forgot.style.display="block";return;}
       if(next==="business"&&(!businesses||businesses.length===0)){const bn=prompt("Business name:");if(!bn||!bn.trim())return;const choices=["Retail / Shop","Kirana / Grocery","Wholesale","Trading","Clothing / Fashion","Electronics","Mobile Shop","Hardware","Medical Store","Restaurant / Hotel","Manufacturing","Construction","Transport","Service Business","Agriculture","Real Estate","Freelancer","Other"];const opts=choices.map((x,i)=>(i+1)+". "+x).join("\\n");const bt=prompt("Choose Business Type:\\n"+opts+"\\n\\nEnter number or custom type:","1");if(bt===null)return;const n=Number(bt);const type=Number.isInteger(n)&&n>=1&&n<=choices.length?choices[n-1]:bt.trim();if(!type)return;businesses.push({name:bn.trim(),type,createdAt:new Date().toISOString()});localStorage.setItem("tr_business_active_name",bn.trim());if(window.TRAccountsCloudData&&window.TRAccountsApplyCloudData){const d=window.TRAccountsCloudData();d.businesses=businesses;window.TRAccountsApplyCloudData(d);}}
       if(next==="business"&&businesses&&businesses.length){const activeName=localStorage.getItem("tr_business_active_name"),b=businesses.find(x=>x.name===activeName)||businesses[0];if(b&&!b.type){const choices=["Retail / Shop","Kirana / Grocery","Wholesale","Trading","Clothing / Fashion","Electronics","Mobile Shop","Hardware","Medical Store","Restaurant / Hotel","Manufacturing","Construction","Transport","Service Business","Agriculture","Real Estate","Freelancer","Other"];const opts=choices.map((x,i)=>(i+1)+". "+x).join("\\n");const bt=prompt("Choose Business Type for "+b.name+":\\n"+opts+"\\n\\nEnter number or custom type:","1");if(bt===null)return;const n=Number(bt),type=Number.isInteger(n)&&n>=1&&n<=choices.length?choices[n-1]:bt.trim();if(!type)return;b.type=type;if(window.TRAccountsCloudData&&window.TRAccountsApplyCloudData){const d=window.TRAccountsCloudData();d.businesses=businesses;window.TRAccountsApplyCloudData(d);}}}
-      accountMode=next;localStorage.setItem(MODE_KEY,next);refreshModeUI();closeModePin();if(next==="business"){businessRender();showPage("businessPage");}else{showPage("dashboard");}alert("Switched to "+(next==="personal"?"Personal":"Business")+" mode.");
+      accountMode=next;localStorage.setItem(MODE_KEY,next);refreshModeUI();closeModePin();if(next==="business"){businessRender();showPage("businessPage");}else{showPage("dashboard");}render();alert("Switched to "+(next==="personal"?"Personal":"Business")+" mode.");
     };
   }
   async function switchAccountMode(next){if(next===accountMode)return;openModePin(next);}
