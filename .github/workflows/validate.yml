@@ -23,6 +23,8 @@ jobs:
           node --check /tmp/tr-accounts.js
       - name: Validate cloud module JavaScript syntax
         run: cp cloud.js /tmp/tr-accounts-cloud.mjs && node --check /tmp/tr-accounts-cloud.mjs
+      - name: Validate Business Suite JavaScript syntax
+        run: node --check business-suite.js
       - name: Validate JSON files
         run: |
           python3 -m json.tool manifest.webmanifest >/dev/null
