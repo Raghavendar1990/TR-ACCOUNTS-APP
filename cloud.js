@@ -19,7 +19,7 @@ function updatePhoneStatus(msg){const el=document.getElementById("phoneVerifySta
 async function sendPhoneOTP(){
  if(!currentUser){status("Sign in with Google first.");return;}
  const phone=(document.getElementById("registerPhone")?.value||"").trim();
- if(!/^\\+[1-9]\\d{7,14}$/.test(phone)){updatePhoneStatus("Enter phone number in international format, e.g. +919876543210.");return;}
+ if(!/^\+[1-9]\d{7,14}$/.test(phone)){updatePhoneStatus("Enter phone number in international format, e.g. +919876543210.");return;}
  try{
   if(!recaptchaVerifier)recaptchaVerifier=new RecaptchaVerifier(auth,"phoneRecaptcha", {size:"invisible"});
   phoneVerificationId=await new PhoneAuthProvider(auth).verifyPhoneNumber(phone,recaptchaVerifier);
@@ -29,7 +29,7 @@ async function sendPhoneOTP(){
 async function verifyPhoneOTP(){
  if(!currentUser||!phoneVerificationId||!verifiedPhone){updatePhoneStatus("Send OTP first.");return;}
  const code=(document.getElementById("phoneOTP")?.value||"").trim();
- if(!/^\\d{6}$/.test(code)){updatePhoneStatus("Enter the 6-digit OTP.");return;}
+ if(!/^\d{6}$/.test(code)){updatePhoneStatus("Enter the 6-digit OTP.");return;}
  try{
   const credential=PhoneAuthProvider.credential(phoneVerificationId,code);
   const providers=currentUser.providerData.map(p=>p.providerId);
