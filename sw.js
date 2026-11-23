@@ -1,10 +1,13 @@
-const CACHE_NAME = "tr-accounts-shell-v3";
+const CACHE_NAME = "tr-accounts-shell-v4";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
   "./storage.js",
   "./business-suite.js",
+  "./cloud.js",
+  "./firebase-config.js",
+  "./TR_Accounts_Logo_Transparent-1.png",
   "./icons/icon-192.svg",
   "./icons/icon-512.svg"
 ];
