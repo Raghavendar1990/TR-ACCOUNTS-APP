@@ -57,8 +57,7 @@ else {
       const d=e.detail||{};
       if(!Array.isArray(d.people)||!Array.isArray(d.transactions)){status("Cloud data format invalid");return;}
       const payload={...d,pinHash:"",recoveryHash:""};
-      localStorage.setItem("tr_accounts_data_v1",JSON.stringify(payload));
-      alert("Cloud data loaded. Refresh the app to apply it.");
+      if(window.TRAccountsApplyCloudData){window.TRAccountsApplyCloudData(payload);status("Cloud data loaded");}else{localStorage.setItem("tr_accounts_data_v1",JSON.stringify(payload));alert("Cloud data saved locally. Reload app to apply.");}
     });
   }catch(err){console.error(err);status("Firebase initialization failed.");}
 }
