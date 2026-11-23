@@ -50,7 +50,7 @@
 
     <section class="page" id="peoplePage"><div class="welcome"><h2 id="peoplePageTitle">People & Ledgers</h2><p id="peoplePageSub">Manage separate accounts person-wise</p></div><div class="section-head"><h3 id="allPeopleTitle">All People</h3><button class="primary" data-action="person">＋</button></div><div class="person-list" id="peopleFullList"></div></section>
     <section class="page" id="historyPage"><div class="welcome"><h2 id="historyTitle">Transactions</h2><p id="historySub">Transaction history</p></div><div class="field"><label id="historySearchLabel">Search</label><input id="historySearch" placeholder="Search description/person"></div><div class="quick" style="grid-template-columns:repeat(3,1fr)"><button class="soft" id="historyAll">All</button><button class="soft" id="historyIncome">Income</button><button class="soft" id="historyExpense">Expense</button></div><div class="section"><div class="person-list" id="historyList"></div></div><div class="section-head"><h3 id="recycleTitle">Recycle Bin</h3><button class="soft" id="openRecycle">View deleted</button></div><div id="recycleList" class="person-list" style="display:none"></div></section>
-    <section class="page" id="statementPage"><div class="welcome"><h2 id="statementPageTitle">Statements</h2><p id="statementPageSub">Person-wise statement and reports</p></div><div class="card"><p id="statementNote">Statement tools (date range, opening balance, PDF export and WhatsApp share) will be added in the next modules.</p></div></section>
+    <section class="page" id="statementPage"><div class="welcome"><h2 id="statementPageTitle">Statements</h2><p id="statementPageSub">Person-wise statement and reports</p></div><div class="card"><div class="field"><label>Person</label><select id="statementPerson"></select></div><div class="field"><label>From Date</label><input id="statementFrom" type="date"></div><div class="field"><label>To Date</label><input id="statementTo" type="date"></div><div class="field"><label>Opening Balance (₹)</label><input id="statementOpening" type="number" value="0" step="0.01"></div><div class="modal-actions"><button class="soft" id="statementGenerate">Generate</button><button class="primary" id="statementPrint">Print / PDF</button></div><div id="statementResult" class="section"></div><button class="soft" id="statementWhatsApp">Share WhatsApp</button></div></section>
     <section class="page" id="settingsPage"><div class="welcome"><h2 id="settingsTitle">Settings</h2><p id="settingsSub">App preferences and security</p></div><div class="card"><div class="section-head"><h3 id="settingsOrderTitle">Settings</h3></div><div class="person-list">
       <div class="person"><div><b>1. P.M.</b><div class="person-sub" id="pmDesc">Person Management</div></div><button class="soft" data-action="person">Open</button></div>
       <div class="person"><div><b>2. Lang</b><div class="person-sub" id="langDesc">Telugu / English</div></div><button class="soft" id="settingsLang">EN / తెలుగు</button></div>
@@ -98,7 +98,7 @@
     
     document.getElementById("statementPageTitle").textContent=t("statementPage");
     document.getElementById("statementPageSub").textContent=t("statementSub");
-    document.getElementById("statementNote").textContent=t("statementNote");
+    
     document.getElementById("settingsTitle").textContent=t("settings");
     document.getElementById("settingsOrderTitle").textContent=t("settingsOrder");
     document.getElementById("pmDesc").textContent=t("pmDesc");
@@ -120,7 +120,20 @@
     renderHistory();
     document.getElementById("activityList").innerHTML=transactions.length?transactions.slice(-4).reverse().map(x=>'<div class="person"><div><b>'+escapeHTML(x.note)+'</b><div class="person-sub">'+escapeHTML(x.person||"")+'</div></div><div class="amount '+(x.type==="income"?"income":"expense")+'">'+(x.type==="income"?"+":"−")+money(x.amount)+'</div></div>':'<div class="empty">'+t("recentEmpty")+'</div>';
   }
-  function renderHistory(){
+  
+function statementGenerate(){
+ const person=document.getElementById("statementPerson").value;
+ const from=document.getElementById("statementFrom").value,to=document.getElementById("statementTo").value;
+ const opening=Number(document.getElementById("statementOpening").value||0);
+ const rows=transactions.filter(x=>x.person===person&&(!from||x.date>=from)&&(!to||x.date<=to)).slice().sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+ let balance=opening,inc=0,exp=0;
+ let html='<div class="person"><b>Opening balance</b><span>'+money(opening)+'</span></div>';
+ rows.forEach(x=>{if(x.type==="income"){inc+=x.amount;balance+=x.amount;}else{exp+=x.amount;balance-=x.amount;}html+='<div class="person"><div><b>'+escapeHTML(x.note)+'</b><div class="person-sub">'+escapeHTML(x.date||"")+' • '+escapeHTML(x.payment||"")+'</div></div><div class="amount '+x.type+'">'+(x.type==="income"?"+":"−")+money(x.amount)+'</div></div>';});
+ html+='<div class="cards"><div class="card"><div class="metric-label">Income</div><div class="metric income">'+money(inc)+'</div></div><div class="card"><div class="metric-label">Expense</div><div class="metric expense">'+money(exp)+'</div></div><div class="card"><div class="metric-label">Closing</div><div class="metric balance">'+money(balance)+'</div></div></div>';
+ document.getElementById("statementResult").innerHTML=html;
+ window.currentStatementText="TR Accounts Statement - "+person+"\nFrom: "+(from||"All")+" To: "+(to||"All")+"\nOpening: "+money(opening)+"\nIncome: "+money(inc)+"\nExpense: "+money(exp)+"\nClosing: "+money(balance)+"\n\n"+rows.map(x=>x.date+" | "+x.note+" | "+x.type+" | "+x.amount+" | "+x.payment).join("\n");
+}
+function renderHistory(){
  const q=(document.getElementById("historySearch")?.value||"").toLowerCase();
  const list=transactions.filter(x=>(historyFilter==="all"||x.type===historyFilter)&&(!q||String(x.note+" "+x.person).toLowerCase().includes(q))).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
  const el=document.getElementById("historyList");
@@ -157,7 +170,12 @@ document.getElementById("historyAll").onclick=()=>{historyFilter="all";renderHis
 document.getElementById("historyIncome").onclick=()=>{historyFilter="income";renderHistory()};
 document.getElementById("historyExpense").onclick=()=>{historyFilter="expense";renderHistory()};
 document.getElementById("openRecycle").onclick=()=>{const box=document.getElementById("recycleList");box.style.display=box.style.display==="none"?"grid":"none";renderHistory()};
-  render();
+
+document.getElementById("statementGenerate").onclick=statementGenerate;
+document.getElementById("statementPrint").onclick=()=>{statementGenerate();window.print()};
+document.getElementById("statementWhatsApp").onclick=()=>{statementGenerate();const text=window.currentStatementText||"";window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank")};
+function refreshStatementPeople(){const s=document.getElementById("statementPerson");s.innerHTML=people.map(p=>'<option>'+escapeHTML(p.name)+'</option>').join("");}
+  refreshStatementPeople();render();
 </script>
 <div class="modal-back" id="txnModal"><div class="modal"><h3>Transaction</h3><div class="field"><label>Person</label><select id="txnPerson"></select></div><div class="field"><label>Type</label><select id="txnType"><option value="income">Income</option><option value="expense">Expense</option></select></div><div class="field"><label>Date</label><input id="txnDate" type="date"></div><div class="field"><label>Description</label><input id="txnNote"></div><div class="field"><label>Amount</label><input id="txnAmount" type="number" min="0.01" step="0.01"></div><div class="field"><label>Payment</label><select id="txnPay"><option>Cash</option><option>UPI</option><option>Card</option><option>Bank</option></select></div><div class="modal-actions"><button class="soft" id="txnCancel">Cancel</button><button class="primary" id="txnSave">Save</button></div></div></div></body>
 </html>
