@@ -117,8 +117,12 @@ else{
     console.error(err);status("Cloud sync error; local copy saved.");return false;
    }
   }
-  // Google sign-in temporarily disabled. Mobile OTP is the active login method.
-  if(btn){btn.style.display="none";}
+  // Google account sign-in for Cloud identity; self-SMS check is local.
+  if(btn){btn.style.display="";btn.addEventListener("click",async()=>{
+   if(currentUser){try{await signOut(auth);status("Signed out.");}catch(err){status("Sign out failed.");}return;}
+   const provider=new GoogleAuthProvider();
+   try{await signInWithPopup(auth,provider);}catch(err){if(err.code==="auth/popup-blocked"||err.code==="auth/popup-closed-by-user"){try{await signInWithRedirect(auth,provider);}catch(e){status("Google sign-in failed: "+(e.code||e.message));}}else status("Google sign-in failed: "+(err.code||err.message));}
+  });}
   const syncBtn=document.getElementById("cloudSyncNow");
   syncBtn?.addEventListener("click",async()=>{
    if(!phoneVerifiedForThisDevice()){status("Complete the self-SMS check before Cloud Sync.");updatePhoneStatus("Self-SMS check required before Cloud Sync.");return;}
