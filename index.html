@@ -210,7 +210,34 @@ document.addEventListener("click",async e=>{
   const modeToggle=document.getElementById("modeToggle"),modeDetails=document.getElementById("modeDetails"),modeChevron=document.getElementById("modeChevron");
   modeToggle.onclick=()=>{const open=modeDetails.style.display!=="none";modeDetails.style.display=open?"none":"block";modeChevron.textContent=open?"＋":"−";};
   function refreshModeUI(){document.getElementById("modePersonal").classList.toggle("primary",accountMode==="personal");document.getElementById("modeBusiness").classList.toggle("primary",accountMode==="business");modeStatus.textContent="Current mode: "+(accountMode==="personal"?"Personal":"Business");}
-  async function switchAccountMode(next){if(next===accountMode)return;let savedPin=localStorage.getItem(MODE_PIN_KEY);if(!savedPin){let p=prompt("Create a 4–8 digit PIN to protect Personal/Business switching");if(!p||!/^[0-9]{4,8}$/.test(p)){alert("PIN must be 4–8 digits. Mode not changed.");return;}localStorage.setItem(MODE_PIN_KEY,p);savedPin=p;}let entered=prompt("Enter PIN to switch to "+(next==="personal"?"Personal":"Business"));if(entered!==savedPin){alert("Incorrect PIN. Mode not changed.");return;}accountMode=next;localStorage.setItem(MODE_KEY,next);refreshModeUI();alert("Switched to "+(next==="personal"?"Personal":"Business")+" mode.");}
+  let pinAttempts=0,modePinOverlay=null,pinRecoveryVisible=false;
+  function closeModePin(){modePinOverlay?.remove();modePinOverlay=null;pinAttempts=0;pinRecoveryVisible=false;}
+  function openModePin(next){
+    closeModePin();
+    const overlay=document.createElement("div");overlay.id="modePinOverlay";overlay.style.cssText="position:fixed;inset:0;z-index:1200;background:#0009;display:flex;align-items:center;justify-content:center;padding:20px";
+    const card=document.createElement("div");card.className="card";card.style.cssText="width:min(420px,100%);padding:22px";
+    card.innerHTML='<h2 style="margin-top:0">🔐 Enter PIN</h2><p class="person-sub">Switch to '+(next==="personal"?"Personal":"Business")+' mode</p><input id="modePinInput" type="password" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="4–8 digit PIN" style="width:100%;padding:14px;border-radius:12px"><div id="modePinError" style="color:var(--red);margin-top:8px;min-height:20px"></div><button id="modePinSubmit" class="primary" style="width:100%;margin-top:10px">Verify PIN</button><button id="modePinForgot" class="soft" style="width:100%;margin-top:8px;display:none">Forgot PIN?</button><button id="modePinCancel" class="soft" style="width:100%;margin-top:8px">Cancel</button>';
+    overlay.appendChild(card);document.body.appendChild(overlay);modePinOverlay=overlay;
+    const input=card.querySelector("#modePinInput"),err=card.querySelector("#modePinError"),forgot=card.querySelector("#modePinForgot");
+    card.querySelector("#modePinCancel").onclick=closeModePin;input.focus();
+    forgot.onclick=async()=>{
+      try{
+        if(!window.TRAccountsReverifyGoogle){err.textContent="Google verification is not available. Please sign in with Google first.";return;}
+        const verified=await window.TRAccountsReverifyGoogle();
+        if(!verified){err.textContent="Google verification failed.";return;}
+        const p=prompt("Google verified. Create a new 4–8 digit PIN:");
+        if(!p||!/^[0-9]{4,8}$/.test(p)){err.textContent="PIN must be 4–8 digits. Recovery cancelled.";return;}
+        localStorage.setItem(MODE_PIN_KEY,p);closeModePin();alert("PIN reset successfully. Please switch mode again and enter your new PIN.");
+      }catch(e){err.textContent=e?.message||"Google verification failed.";}
+    };
+    card.querySelector("#modePinSubmit").onclick=()=>{
+      const saved=localStorage.getItem(MODE_PIN_KEY),entered=input.value;
+      if(!saved){const p=prompt("Create a 4–8 digit PIN to protect Personal/Business switching");if(!p||!/^[0-9]{4,8}$/.test(p)){err.textContent="PIN must be 4–8 digits.";return;}localStorage.setItem(MODE_PIN_KEY,p);closeModePin();openModePin(next);return;}
+      if(entered!==saved){pinAttempts++;err.textContent="Incorrect PIN. Attempt "+pinAttempts+" of 5.";input.value="";if(pinAttempts>=5)forgot.style.display="block";return;}
+      accountMode=next;localStorage.setItem(MODE_KEY,next);refreshModeUI();closeModePin();alert("Switched to "+(next==="personal"?"Personal":"Business")+" mode.");
+    };
+  }
+  async function switchAccountMode(next){if(next===accountMode)return;openModePin(next);}
   document.getElementById("modePersonal").onclick=()=>switchAccountMode("personal");
   document.getElementById("modeBusiness").onclick=()=>switchAccountMode("business");
   refreshModeUI();
