@@ -1,10 +1,11 @@
-// Firebase Web app configuration. Values are public identifiers, not server secrets.
-// Replace placeholders with your Firebase project Web App settings.
+// Firebase Web app configuration for TR Accounts.
+// These client identifiers are public; access is protected by Firebase Auth and Firestore rules.
 export const firebaseConfig = {
-  apiKey: "YOUR_FIREBASE_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_FIREBASE_APP_ID"
+  apiKey: "AIzaSyAx8JKbGJnKOTfoLjWgqAn2wBbDMRyXr9c",
+  authDomain: "tr-accounts-6de03.firebaseapp.com",
+  projectId: "tr-accounts-6de03",
+  storageBucket: "tr-accounts-6de03.firebasestorage.app",
+  messagingSenderId: "943088936513",
+  appId: "1:943088936513:web:73e40b96b7bdb10af0c8c0",
+  measurementId: "G-BMGBKGT0F5"
 };
