@@ -1,6 +1,6 @@
 /* TR Accounts Google Cloud module with conflict protection. Firebase client config is public. */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, PhoneAuthProvider, RecaptchaVerifier, linkWithCredential } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, PhoneAuthProvider, RecaptchaVerifier, signInWithCredential } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp, runTransaction, collection, addDoc, onSnapshot, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
@@ -17,32 +17,30 @@ function phoneVerifiedForThisDevice(){
 }
 function updatePhoneStatus(msg){const el=document.getElementById("phoneVerifyStatus");if(el)el.textContent=msg;}
 async function sendPhoneOTP(){
- updatePhoneStatus("Send OTP button tapped. Checking phone number and Firebase…");
- if(!currentUser){status("Sign in with Google first.");updatePhoneStatus("Please sign in with Google first.");return;}
+ updatePhoneStatus("Checking mobile number…");
  const phone=(document.getElementById("registerPhone")?.value||"").trim();
- if(!/^\+[1-9]\d{7,14}$/.test(phone)){updatePhoneStatus("Enter phone number in international format, e.g. +919876543210.");return;}
+ if(!/^\\+[1-9]\\d{7,14}$/.test(phone)){updatePhoneStatus("Enter mobile number with country code, e.g. +919876543210.");return;}
  try{
   if(!recaptchaVerifier)recaptchaVerifier=new RecaptchaVerifier(auth,"phoneRecaptcha", {size:"invisible"});
   phoneVerificationId=await new PhoneAuthProvider(auth).verifyPhoneNumber(phone,recaptchaVerifier);
-  verifiedPhone=phone;updatePhoneStatus("OTP sent. Enter the 6-digit code.");
- }catch(err){console.error(err);updatePhoneStatus("OTP could not be sent. Enable Phone provider in Firebase Authentication and try again.");if(recaptchaVerifier){try{recaptchaVerifier.clear();}catch{}recaptchaVerifier=null;}}
+  verifiedPhone=phone;updatePhoneStatus("OTP sent to "+phone+". Enter the 6-digit code.");
+ }catch(err){console.error("Phone OTP send:",err);updatePhoneStatus("OTP send failed: "+(err.code||err.message||"Please try again."));if(recaptchaVerifier){try{recaptchaVerifier.clear();}catch{}recaptchaVerifier=null;}}
 }
 async function verifyPhoneOTP(){
- if(!currentUser||!phoneVerificationId||!verifiedPhone){updatePhoneStatus("Send OTP first.");return;}
+ if(!phoneVerificationId||!verifiedPhone){updatePhoneStatus("Tap Send OTP first.");return;}
  const code=(document.getElementById("phoneOTP")?.value||"").trim();
- if(!/^\d{6}$/.test(code)){updatePhoneStatus("Enter the 6-digit OTP.");return;}
+ if(!/^\\d{6}$/.test(code)){updatePhoneStatus("Enter the 6-digit OTP.");return;}
  try{
   const credential=PhoneAuthProvider.credential(phoneVerificationId,code);
-  const providers=currentUser.providerData.map(p=>p.providerId);
-  if(!providers.includes("phone")){await linkWithCredential(currentUser,credential);}
-  if(currentUser.phoneNumber!==verifiedPhone){updatePhoneStatus("The OTP number must match the registered phone already linked to this Google account.");return;}
+  const result=await signInWithCredential(auth,credential);
+  currentUser=result.user;
   localStorage.setItem("tr_accounts_phone_verified_"+currentUser.uid,verifiedPhone);
   await currentUser.getIdToken(true);
-  updatePhoneStatus("Phone number verified on this device. Cloud sync enabled.");
-  status("Google account and registered number verified.");
+  updatePhoneStatus("Mobile login successful. Cloud sync is ready.");
+  status("Mobile Login successful.");
   listenForOwnerRequests();
   await syncData();
- }catch(err){console.error(err);updatePhoneStatus(err.code==="auth/provider-already-linked"?"Phone is already linked. OTP was not accepted for this account; try again or contact support.":"OTP verification failed. Check the code and try again.");}
+ }catch(err){console.error("Phone OTP verify:",err);updatePhoneStatus("Login failed: "+(err.code||err.message||"Check OTP and try again."));}
 }
 if(missing){status("Cloud: Firebase project config needed. App data remains local until configured.");}
 else{
@@ -151,26 +149,8 @@ else{
     console.error(err);status("Cloud sync error; local copy saved.");return false;
    }
   }
-  btn?.addEventListener("click",async(e)=>{
-   e.preventDefault();e.stopPropagation();
-   if(currentUser){if(confirm("Sign out of Google Cloud?"))await signOut(auth);return;}
-   const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:"select_account"});
-   const mobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-   status(mobile?"Redirecting to Google sign-in…":"Opening Google account chooser…");
-   try{
-    // Mobile browsers/webviews often close blocked popups silently; use redirect directly.
-    if(mobile){await signInWithRedirect(auth,provider);return;}
-    await signInWithPopup(auth,provider);
-   }catch(err){
-    console.error("Google sign-in error:",err);
-    const detail=(err.code||err.message||"Unknown error");
-    status("Google Login failed: "+detail);
-    if(!mobile&&(err.code==="auth/popup-blocked"||err.code==="auth/operation-not-supported-in-this-environment"||err.code==="auth/popup-closed-by-user")){
-     status("Popup blocked. Redirecting to Google…");
-     try{await signInWithRedirect(auth,provider);}catch(redirectErr){console.error("Google redirect sign-in:",redirectErr);status("Google Login failed: "+(redirectErr.code||redirectErr.message||"Unknown error"));}
-    }
-   }
-  });
+  // Google sign-in temporarily disabled. Mobile OTP is the active login method.
+  if(btn){btn.style.display="none";}
   const syncBtn=document.getElementById("cloudSyncNow");
   syncBtn?.addEventListener("click",async()=>{
    if(!currentUser){status("Please sign in to Google first.");return;}
