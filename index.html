@@ -55,7 +55,7 @@
       <div class="person"><div><b>1. P.M.</b><div class="person-sub" id="pmDesc">Person Management</div></div><button class="soft" data-action="person">Open</button></div>
       <div class="person"><div><b>2. Lang</b><div class="person-sub" id="langDesc">Telugu / English</div></div><button class="soft" id="settingsLang">EN / తెలుగు</button></div>
       <div class="person"><div><b>3. PIN</b><div class="person-sub" id="pinDesc">Security setup module</div></div><button class="soft" id="pinSoon">Setup</button></div>
-      <div class="person"><div><b>4. Backup</b><div class="person-sub" id="backupDesc">Local backup & restore</div></div><button class="soft" id="backupSoon">Open</button></div>
+      <div class="person"><div><b>4. Backup</b><div class="person-sub" id="backupDesc">Local backup & restore</div></div><div class="person-tools"><button class="soft" id="backupSoon">Backup</button><button class="soft" id="restoreNow">Restore</button></div></div>
     </div></div><input type="file" id="restoreFile" accept="application/json,.json" hidden><div class="notice" id="moduleNotice">This is the first UI foundation. Data storage, authentication, PIN, backup, cloud sync and full transaction flows will be implemented in separate modules.</div></section>
   </main>
 </div>
@@ -125,7 +125,7 @@
 
 function backupExport(){const payload={app:"TR Accounts",version:1,exportedAt:new Date().toISOString(),people,transactions,recycleBin,language:lang,theme:document.body.classList.contains("light")?"light":"dark"};const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="TR-Accounts-Backup-"+new Date().toISOString().slice(0,10)+".json";a.click();URL.revokeObjectURL(url);}
 document.getElementById("backupSoon").onclick=()=>backupExport();
-document.getElementById("backupSoon").addEventListener("contextmenu",e=>{e.preventDefault();document.getElementById("restoreFile").click()});
+document.getElementById("restoreNow").onclick=()=>document.getElementById("restoreFile").click();
 document.getElementById("restoreFile").addEventListener("change",async e=>{const file=e.target.files[0];if(!file)return;try{const data=JSON.parse(await file.text());if(!Array.isArray(data.people)||!Array.isArray(data.transactions))throw new Error("Invalid backup");if(!confirm("Restore backup? Current data will be replaced."))return;people=data.people;transactions=data.transactions;recycleBin=Array.isArray(data.recycleBin)?data.recycleBin:[];lang=data.language==="te"?"te":"en";if(data.theme==="light")document.body.classList.add("light");else document.body.classList.remove("light");render();alert("Backup restored.");}catch(err){alert("Backup file invalid.");}e.target.value="";});
 function statementGenerate(){
  const person=document.getElementById("statementPerson").value;
