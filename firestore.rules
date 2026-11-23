@@ -10,8 +10,11 @@ service cloud.firestore {
     }
 
     match /trAccountsUsers/{uid} {
-      allow read, write: if owner(uid);
-      allow read, write: if approvedDevice(uid);
+      allow read: if owner(uid) || approvedDevice(uid);
+      allow create, delete: if owner(uid);
+      allow update: if owner(uid)
+        || (approvedDevice(uid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['data', 'updatedAt']));
 
       match /deviceRequests/{requestId} {
         allow create: if signedIn()
@@ -20,9 +23,13 @@ service cloud.firestore {
           && request.resource.data.requestedAt is timestamp;
         allow read: if owner(uid)
           || (signedIn() && resource.data.requesterUid == request.auth.uid);
-        allow update: if owner(uid)
-          && request.resource.data.requesterUid == resource.data.requesterUid
-          && request.resource.data.status in ['approved', 'rejected'];
+        allow update: if (owner(uid)
+            && request.resource.data.requesterUid == resource.data.requesterUid
+            && request.resource.data.status in ['approved', 'rejected'])
+          || (signedIn() && resource.data.requesterUid == request.auth.uid
+            && resource.data.status == 'rejected'
+            && request.resource.data.status == 'pending'
+            && request.resource.data.requesterUid == request.auth.uid);
         allow delete: if owner(uid);
       }
     }
