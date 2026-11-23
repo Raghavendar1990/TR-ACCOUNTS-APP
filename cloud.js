@@ -1,6 +1,6 @@
 /* TR Accounts Cloud: Google sign-in, automatic sync, and conflict-safe uploads. Self-SMS is optional. */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, reauthenticateWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp, runTransaction, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
@@ -52,6 +52,7 @@ if(missing){status("Firebase configuration is missing. Data remains on this devi
 else{
  try{
   const app=initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);
+  window.TRAccountsReverifyGoogle=async()=>{const user=auth?.currentUser;if(!user)return false;const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:"select_account"});const result=await reauthenticateWithPopup(user,provider);return !!result?.user;};
   // Process a pending mobile redirect result as well as popup sign-in.
   getRedirectResult(auth).catch(e=>{if(e&&e.code!=="auth/no-auth-event")console.warn("Google redirect result:",e);});
   onAuthStateChanged(auth,async user=>{currentUser=user||null;lastCloudJSON=null;conflictPaused=false;status(user?"Google account connected.":"Google Login");if(!user){fillProfile(loadProfileLocal());return;}try{const pRef=doc(db,"trAccountsUsers",user.uid),pSnap=await getDoc(pRef),cloudProfile=pSnap.exists()?(pSnap.data().profile||{}):{},localProfile=loadProfileLocal();fillProfile({email:user.email||"",name:cloudProfile.name||localProfile.name||user.displayName||"",phone:cloudProfile.phone||localProfile.phone||"",age:cloudProfile.age||localProfile.age||"",gender:cloudProfile.gender||localProfile.gender||""});}catch(e){fillProfile({email:user.email||"",...loadProfileLocal()});}await syncData();});
