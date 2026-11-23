@@ -21,6 +21,8 @@ jobs:
           open('/tmp/tr-accounts.js','w',encoding='utf-8').write(scripts[-1])
           PY
           node --check /tmp/tr-accounts.js
+      - name: Validate cloud module JavaScript syntax
+        run: cp cloud.js /tmp/tr-accounts-cloud.mjs && node --check /tmp/tr-accounts-cloud.mjs
       - name: Validate JSON files
         run: |
           python3 -m json.tool manifest.webmanifest >/dev/null
