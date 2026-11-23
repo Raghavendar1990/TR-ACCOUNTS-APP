@@ -122,7 +122,7 @@
     const income=transactions.filter(x=>x.type==="income").reduce((a,x)=>a+x.amount,0),expense=transactions.filter(x=>x.type==="expense").reduce((a,x)=>a+x.amount,0);
     document.getElementById("incomeTotal").textContent=money(income);document.getElementById("expenseTotal").textContent=money(expense);document.getElementById("balanceTotal").textContent=money(income-expense);
     renderHistory();
-    document.getElementById("activityList").innerHTML=transactions.length?transactions.slice(-4).reverse().map(x=>'<div class="person"><div><b>'+escapeHTML(x.note)+'</b><div class="person-sub">'+escapeHTML(x.person||"")+'</div></div><div class="amount '+(x.type==="income"?"income":"expense")+'">'+(x.type==="income"?"+":"−")+money(x.amount)+'</div></div>':'<div class="empty">'+t("recentEmpty")+'</div>';
+    document.getElementById("activityList").innerHTML=transactions.length?transactions.slice(-4).reverse().map(x=>'<div class="person"><div><b>'+escapeHTML(x.note)+'</b><div class="person-sub">'+escapeHTML(x.person||"")+'</div></div><div class="amount '+(x.type==="income"?"income":"expense")+'">'+(x.type==="income"?"+":"−")+money(x.amount)+'</div></div>'):'<div class="empty">'+t("recentEmpty")+'</div>';
   }
   
 
