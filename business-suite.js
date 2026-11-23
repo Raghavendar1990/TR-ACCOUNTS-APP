@@ -12,7 +12,7 @@ let activeTab="dashboard",selectedBusiness=localStorage.getItem("tr_business_act
 function save(){localStorage.setItem(KEY,JSON.stringify(data));window.dispatchEvent(new CustomEvent("tr-accounts-data-updated"));}
 function cloudData(){return Object.fromEntries(Object.keys(empty()).filter(k=>k!=="settings").map(k=>[k,data[k]]).concat([["businessSuiteSettings",data.settings]]));}
 window.TRBusinessCloudData=cloudData;
-window.TRBusinessApplyCloudData=d=>{Object.keys(empty()).forEach(k=>{if(Array.isArray(d[k]))data[k]=d[k];});if(d.settingsByBusiness&&typeof d.settingsByBusiness==="object")data.settingsByBusiness=d.settingsByBusiness;if(d.businessSuiteSettings)data.settings=d.businessSuiteSettings;saveLocalOnly();render();};
+window.TRBusinessApplyCloudData=d=>{Object.keys(empty()).forEach(k=>{if(Array.isArray(d[k]))data[k]=d[k];});if(d.settingsByBusiness&&typeof d.settingsByBusiness==="object")data.settingsByBusiness=d.settingsByBusiness;if(d.cashAccountsByBusiness&&typeof d.cashAccountsByBusiness==="object")data.cashAccountsByBusiness=d.cashAccountsByBusiness;if(d.businessSuiteSettings)data.settings=d.businessSuiteSettings;saveLocalOnly();render();};
 function saveLocalOnly(){localStorage.setItem(KEY,JSON.stringify(data));}
 function businessNames(){return (window.TRAccountsCloudData?.().businesses||[]).filter(x=>!x.archived).map(x=>x.name);}
 function activeBiz(){const names=businessNames();if(selectedBusiness&&names.includes(selectedBusiness))return selectedBusiness;selectedBusiness=names[0]||"Business";return selectedBusiness;}
