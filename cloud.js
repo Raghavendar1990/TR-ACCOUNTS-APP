@@ -6,7 +6,8 @@ import { firebaseConfig } from "./firebase-config.js";
 
 const btn=document.getElementById("cloudSetup"),notice=document.getElementById("moduleNotice");
 const missing=!firebaseConfig||Object.values(firebaseConfig).some(v=>!v||String(v).includes("YOUR_"));
-let auth,db,currentUser=null,syncing=false,timer,lastCloudJSON=null,conflictPaused=false,authReadyResolve,authReady=new Promise(resolve=>authReadyResolve=resolve);\nasync function waitForAuthUser(timeout=5000){if(auth?.currentUser)return auth.currentUser;await Promise.race([authReady,new Promise(resolve=>setTimeout(resolve,timeout))]);return auth?.currentUser||currentUser||null;}
+let auth,db,currentUser=null,syncing=false,timer,lastCloudJSON=null,conflictPaused=false,authReadyResolve,authReady=new Promise(resolve=>authReadyResolve=resolve);
+async function waitForAuthUser(timeout=5000){if(auth?.currentUser)return auth.currentUser;await Promise.race([authReady,new Promise(resolve=>setTimeout(resolve,timeout))]);return auth?.currentUser||currentUser||null;}
 function status(msg){if(notice)notice.textContent=msg;if(btn)btn.textContent=currentUser?"Sign out":"Google Login";}
 function jsonData(d){return JSON.stringify(d||{});}
 
