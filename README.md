@@ -1,45 +1,35 @@
 # TR Accounts Book
 
-Mobile-first personal and business ledger app. The repository currently contains a local-first prototype; listed modules are present in code but are not yet fully tested or production-ready.
+Mobile-first person-wise and business accounting app. This repository is an active prototype; features still require browser/device and deployment validation.
 
-## Modules present in code (testing pending)
-- Dashboard income, expense, and balance totals
-- Person-wise ledgers, add/rename/delete person
-- Income and expense transaction entries (date, description, payment method)
-- History search and type filters; edit transactions; move to Recycle Bin, restore, or permanently delete
-- Person-wise statement filters, opening balance, print/PDF, and WhatsApp text sharing
-- Local JSON backup and restore
-- Optional image/PDF proof attachment (700 KB max), stored separately in IndexedDB
-- Business ledgers and business entries
-- Partner records, share %, investment, profit/withdrawal record entries
-- Telugu/English labels and dark/light themes
-- Local PIN with hashed PIN and recovery code
-- PWA manifest and offline service-worker shell
-- Capacitor Android configuration and a manual GitHub Actions debug-APK workflow
+## Features in the current code
+- Dashboard totals, person-wise ledgers, transaction add/edit, history filters, recycle-bin restore/delete
+- Person-wise statements with date filtering, opening balance, running balance, print/PDF, and WhatsApp sharing
+- Local JSON backup and restore; backup export attempts to include proof attachments encoded as Base64
+- Optional image/PDF proof attachment (700 KB maximum), stored in IndexedDB
+- Business ledgers and partner records
+- Telugu/English UI labels and dark/light themes
+- Local PIN hash and recovery-code flow
+- Google sign-in and Firestore cloud sync module (Firebase configuration is included); requires Firebase Auth, authorized domains, and suitable Firestore rules
+- PWA manifest, offline service-worker shell, Capacitor Android setup, and debug APK workflow
 
-## Not implemented / not connected yet
-- Firebase authentication and cloud sync
+## Not yet implemented or verified
 - Owner approval for second-device access
-- Cloud backup/restore and account recovery
-- Final owner-selected logo/photo integration
-- Scheduled daily/weekly backup
-- Production Android build, device testing, and full feature validation
+- Automated daily/weekly backup scheduling
+- Full test coverage and real-device validation
+- Final integration of the owner's original logo/photo
+- Latest GitHub Actions validation, Pages deployment, and APK build status are not confirmed
 
 ## Data and safety
-Current app data is saved locally in the browser/device. Proof attachments are stored separately and are not included in JSON backup. Cloud sync is not active. Do not rely on this prototype as the sole financial record until backups, testing, and cloud features are completed.
+Local app data is saved in browser/device storage. Proof attachments are stored in IndexedDB. JSON backup export includes proofs when the proof records can be read; restore attempts to re-import them. Keep backups in a separate safe location and do not treat this prototype as the only financial record.
 
-## Firebase setup
+Cloud sync is implemented in the client module but is not considered production-ready until Firebase configuration, authentication domains, Firestore rules, conflict behavior, and multi-device testing are verified.
 
-Follow [Firebase setup instructions](FIREBASE_SETUP.md) to configure Google sign-in and Firestore. Cloud features remain inactive until the project configuration is added.
+## Firebase
+See [Firebase setup instructions](FIREBASE_SETUP.md). The current Firestore rules restrict users to documents keyed by their own authenticated UID; they do **not** implement owner-approved second-device access.
 
-## Debug APK workflow
-1. Open the repository on GitHub.
-2. Open **Actions** → **Build Android APK**.
-3. Choose **Run workflow**.
-4. Wait for the run to finish successfully.
-5. Download the **TR-Accounts-debug-APK** artifact.
-
-APK generation has not yet been verified.
+## Debug APK
+The GitHub Actions workflow `.github/workflows/build-apk.yml` builds a debug APK and uploads it as the `TR-Accounts-debug-APK` artifact when it succeeds. The latest build has not been verified.
 
 ## Validation
-GitHub Actions validation is configured to check inline JavaScript syntax and the manifest JSON on pushes and pull requests.
+Validation workflow checks should be reviewed in GitHub Actions after each relevant commit.
