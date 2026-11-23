@@ -1,13 +1,13 @@
 /* TR Accounts Google Cloud module with conflict protection. Firebase client config is public. */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, serverTimestamp, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp, runTransaction, collection, addDoc, onSnapshot, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
 const btn=document.getElementById("cloudSetup");
 const notice=document.getElementById("moduleNotice");
 const missing=!firebaseConfig||Object.values(firebaseConfig).some(v=>!v||String(v).includes("YOUR_"));
-let auth,db,currentUser,syncing=false,timer,lastCloudJSON=null,conflictPaused=false;
+let auth,db,currentUser,syncing=false,timer,lastCloudJSON=null,conflictPaused=false,dataOwnerUid=null,requestListener=null,ownerRequestsListener=null;
 function status(msg){if(notice)notice.textContent=msg;if(btn)btn.textContent=currentUser?"Sign out":"Google Login";}
 function jsonData(d){return JSON.stringify(d||{});}
 if(missing){status("Cloud: Firebase project config needed. App data remains local until configured.");}
@@ -20,13 +20,13 @@ else{
    status("Cloud connected: "+(user.displayName||user.email||"Google account"));
    await syncData();
   });
-  async function syncData(){
+\n  // Owner-approved second-device access. A second device requests access to the owner's UID.\n  async function requestOwnerApproval(){\n   if(!currentUser){status("Sign in first.");return;}\n   const ownerUid=(document.getElementById("ownerUidInput")?.value||"").trim();\n   if(!ownerUid||ownerUid===currentUser.uid){status("Enter the owner UID from the first device.");return;}\n   try{const reqRef=doc(db,"trAccountsUsers",ownerUid,"deviceRequests",currentUser.uid);await setDoc(reqRef,{requesterUid:currentUser.uid,requesterEmail:currentUser.email||"",requesterName:currentUser.displayName||"",status:"pending",requestedAt:serverTimestamp()},{merge:true});\n    const statusEl=document.getElementById("deviceRequestStatus");if(statusEl)statusEl.textContent="Approval request sent. Waiting for owner approval…";\n    if(requestListener)requestListener();requestListener=onSnapshot(reqRef,snap=>{if(snap.exists()&&snap.data().status==="approved"){dataOwnerUid=ownerUid;lastCloudJSON=null;status("Second device approved. Connecting to owner's account…");syncData();}else if(snap.exists()&&snap.data().status==="rejected"){if(statusEl)statusEl.textContent="Owner rejected this device request.";}});\n   }catch(err){console.error(err);status("Could not send approval request. Check Firestore rules and connection.");}\n  }\n  function listenForOwnerRequests(){\n   if(!currentUser)return;const listEl=document.getElementById("deviceRequestsList");if(ownerRequestsListener)ownerRequestsListener();\n   ownerRequestsListener=onSnapshot(collection(db,"trAccountsUsers",currentUser.uid,"deviceRequests"),snap=>{\n    if(!listEl)return;const pending=snap.docs.filter(d=>d.data().status==="pending");\n    listEl.innerHTML=pending.length?pending.map(d=>{const x=d.data();return '<div class="person"><div><b>'+String(x.requesterName||"New device").replace(/[&<>"]/g,"")+'</b><div class="person-sub">'+String(x.requesterEmail||"").replace(/[&<>"]/g,"")+'<br>UID: '+d.id+'</div></div><div class="person-tools"><button class="soft" data-device-approve="'+d.id+'">Approve</button><button class="soft danger" data-device-reject="'+d.id+'">Reject</button></div></div>';}).join(""):'<div class="person-sub">No pending device requests.</div>';\n    listEl.querySelectorAll("[data-device-approve]").forEach(b=>b.onclick=()=>approveDevice(b.dataset.deviceApprove,true));listEl.querySelectorAll("[data-device-reject]").forEach(b=>b.onclick=()=>approveDevice(b.dataset.deviceReject,false));\n   },err=>{console.warn("Device request listener:",err);if(listEl)listEl.textContent="Device requests unavailable. Check Firestore rules.";});\n  }\n  async function approveDevice(deviceUid,approved){\n   if(!currentUser||!confirm((approved?"Approve":"Reject")+" this second-device request?"))return;\n   try{const reqRef=doc(db,"trAccountsUsers",currentUser.uid,"deviceRequests",deviceUid);await updateDoc(reqRef,{status:approved?"approved":"rejected",reviewedAt:serverTimestamp()});if(approved)await updateDoc(doc(db,"trAccountsUsers",currentUser.uid),{approvedDevices:arrayUnion(deviceUid)});status(approved?"Device approved. It can now connect to this owner's cloud data.":"Device request rejected.");}\n   catch(err){console.error(err);status("Approval failed. Publish updated Firestore rules first.");}\n  }\n  document.getElementById("requestDeviceBtn")?.addEventListener("click",requestOwnerApproval);\n  async function syncData(){
    if(!currentUser||syncing||!window.TRAccountsCloudData)return;
    syncing=true;
    try{
-    const ref=doc(db,"trAccountsUsers",currentUser.uid),snap=await getDoc(ref),local=window.TRAccountsCloudData();
+    const ref=doc(db,"trAccountsUsers",dataOwnerUid||currentUser.uid),snap=await getDoc(ref),local=window.TRAccountsCloudData();
     if(!snap.exists()){
-      await setDoc(ref,{data:local,updatedAt:serverTimestamp()});
+      await setDoc(ref,{data:local,updatedAt:serverTimestamp(),approvedDevices:[]},{merge:true});
       lastCloudJSON=jsonData(local);status("Cloud: initial upload complete");
     }else{
       const cloud=snap.data().data;
@@ -34,7 +34,7 @@ else{
        window.dispatchEvent(new CustomEvent("tr-accounts-load-cloud",{detail:cloud}));
        lastCloudJSON=jsonData(cloud);status("Cloud: data loaded");
       }else{
-       await setDoc(ref,{data:local,updatedAt:serverTimestamp()});
+       await setDoc(ref,{data:local,updatedAt:serverTimestamp()},{merge:true});
        lastCloudJSON=jsonData(local);status("Cloud: local data uploaded");
       }
     }
@@ -43,13 +43,13 @@ else{
   }
   async function guardedUpload(force=false){
    if(!currentUser||!window.TRAccountsCloudData)return;
-   const ref=doc(db,"trAccountsUsers",currentUser.uid),local=window.TRAccountsCloudData(),localJSON=jsonData(local);
+   const ref=doc(db,"trAccountsUsers",dataOwnerUid||currentUser.uid),local=window.TRAccountsCloudData(),localJSON=jsonData(local);
    try{
     await runTransaction(db,async tx=>{
       const snap=await tx.get(ref);
       const remoteJSON=snap.exists()?jsonData(snap.data().data):null;
       if(!snap.exists()||remoteJSON===lastCloudJSON||force){
-        tx.set(ref,{data:local,updatedAt:serverTimestamp()});
+        tx.set(ref,{data:local,updatedAt:serverTimestamp()},{merge:true});
       }else throw new Error("TR_CONFLICT");
     });
     lastCloudJSON=localJSON;conflictPaused=false;status("Cloud: synced");
