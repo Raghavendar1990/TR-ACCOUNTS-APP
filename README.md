@@ -26,5 +26,11 @@ Mobile-first personal ledger prototype for person-wise accounting. Telugu and En
 
 Cloud features are not active yet; current data is stored on the device/browser. Proof attachments are not included in JSON backup yet. Do not use this prototype as a sole financial record until backup and testing are complete.
 
+## Build a debug APK
+1. Open the repository in GitHub.
+2. Go to **Actions** → **Build Android APK**.
+3. Tap **Run workflow** and wait for completion.
+4. Download the **TR-Accounts-debug-APK** artifact and install the APK on Android.
+
 ## Validation
 GitHub Actions checks inline JavaScript syntax and the web manifest JSON on pushes and pull requests.
