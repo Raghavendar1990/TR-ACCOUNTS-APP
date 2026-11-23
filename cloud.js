@@ -76,6 +76,13 @@ else{
    if(currentUser){if(confirm("Sign out of Google Cloud?"))await signOut(auth);}
    else try{await signInWithPopup(auth,new GoogleAuthProvider());}catch(err){console.error(err);status("Google sign-in failed. Check authorized domains.");}
   });
+  const syncBtn=document.getElementById("cloudSyncNow");
+  syncBtn?.addEventListener("click",async()=>{
+   if(!currentUser){status("Please sign in to Google first.");return;}
+   if(syncing){status("Cloud sync is already running.");return;}
+   syncing=true;status("Cloud: checking latest data…");
+   try{await guardedUpload(false);}finally{syncing=false;}
+  });
   window.addEventListener("tr-accounts-data-updated",()=>{
    if(!currentUser||conflictPaused)return;clearTimeout(timer);
    timer=setTimeout(async()=>{if(syncing)return;syncing=true;try{await guardedUpload(false);}finally{syncing=false;}},1200);
