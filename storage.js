@@ -1,9 +1,14 @@
 /* TR Accounts local persistence layer.
-   This stores app data on this device/browser only. Cloud sync is a separate module. */
+   Data stays on this device/browser. Cloud sync is handled by cloud.js.
+   Proof attachments are stored separately in IndexedDB to keep ledger data lightweight. */
 (() => {
   "use strict";
   const KEY = "tr_accounts_data_v1";
-  const DEFAULTS = { people: [], transactions: [], recycleBin: [], businesses: [], businessTransactions: [], partners: [], partnerRecords: [], pinHash: "", recoveryHash: "", language: "en", theme: "dark" };
+  const DEFAULTS = {
+    people: [], transactions: [], recycleBin: [], businesses: [],
+    businessTransactions: [], partners: [], partnerRecords: [],
+    pinHash: "", recoveryHash: "", language: "en", theme: "dark"
+  };
 
   function load() {
     try {
@@ -52,12 +57,74 @@
     }
   }
 
-  window.TRStorage = { load, save };
-  window.TRFiles = { saveProof, getProof, deleteProof };
   const FILE_DB = "tr_accounts_files_v1";
-  function fileDb(){return new Promise((resolve,reject)=>{const req=indexedDB.open(FILE_DB,1);req.onupgradeneeded=()=>req.result.createObjectStore("proofs",{keyPath:"id"});req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
-  async function saveProof(id,file){const db=await fileDb();return new Promise((resolve,reject)=>{const tx=db.transaction("proofs","readwrite");tx.objectStore("proofs").put({id,name:file.name,type:file.type,blob:file,createdAt:new Date().toISOString()});tx.oncomplete=()=>{db.close();resolve(true)};tx.onerror=()=>{db.close();reject(tx.error)};});}
-  async function getProof(id){const db=await fileDb();return new Promise((resolve,reject)=>{const tx=db.transaction("proofs","readonly");const req=tx.objectStore("proofs").get(id);req.onsuccess=()=>{db.close();resolve(req.result||null)};req.onerror=()=>{db.close();reject(req.error)};});}
-  async function deleteProof(id){const db=await fileDb();return new Promise((resolve,reject)=>{const tx=db.transaction("proofs","readwrite");tx.objectStore("proofs").delete(id);tx.oncomplete=()=>{db.close();resolve(true)};tx.onerror=()=>{db.close();reject(tx.error)};});}
+  const FILE_STORE = "proofs";
+  const MAX_PROOF_BYTES = 700 * 1024;
+  const ALLOWED_PROOF_TYPES = ["application/pdf"];
 
+  function fileDb() {
+    if (!window.indexedDB) return Promise.reject(new Error("IndexedDB is not supported on this device/browser."));
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(FILE_DB, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(FILE_STORE)) db.createObjectStore(FILE_STORE, { keyPath: "id" });
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error || new Error("Could not open proof storage."));
+      req.onblocked = () => reject(new Error("Proof storage upgrade is blocked by another open tab."));
+    });
+  }
+
+  function validateProof(id, file) {
+    if (!id || typeof id !== "string") throw new Error("Proof attachment ID is required.");
+    if (!file || typeof file.size !== "number") throw new Error("Select a proof file.");
+    if (file.size > MAX_PROOF_BYTES) throw new Error("Proof file must be 700 KB or smaller.");
+    const isImage = typeof file.type === "string" && file.type.startsWith("image/");
+    const isPdf = file.type === "application/pdf";
+    if (!isImage && !isPdf) throw new Error("Only image or PDF proof files are allowed.");
+  }
+
+  async function saveProof(id, file) {
+    validateProof(id, file);
+    const db = await fileDb();
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const tx = db.transaction(FILE_STORE, "readwrite");
+      tx.objectStore(FILE_STORE).put({
+        id, name: String(file.name || id), type: file.type || "application/octet-stream",
+        blob: file, size: file.size, createdAt: new Date().toISOString()
+      });
+      tx.oncomplete = () => { if (!settled) { settled = true; db.close(); resolve(true); } };
+      tx.onerror = () => { if (!settled) { settled = true; db.close(); reject(tx.error || new Error("Proof save failed.")); } };
+      tx.onabort = () => { if (!settled) { settled = true; db.close(); reject(tx.error || new Error("Proof save was cancelled.")); } };
+    });
+  }
+
+  async function getProof(id) {
+    if (!id) return null;
+    const db = await fileDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(FILE_STORE, "readonly");
+      const req = tx.objectStore(FILE_STORE).get(id);
+      req.onsuccess = () => { db.close(); resolve(req.result || null); };
+      req.onerror = () => { db.close(); reject(req.error || new Error("Proof read failed.")); };
+      tx.onabort = () => { db.close(); reject(tx.error || new Error("Proof read was cancelled.")); };
+    });
+  }
+
+  async function deleteProof(id) {
+    if (!id) return false;
+    const db = await fileDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(FILE_STORE, "readwrite");
+      tx.objectStore(FILE_STORE).delete(id);
+      tx.oncomplete = () => { db.close(); resolve(true); };
+      tx.onerror = () => { db.close(); reject(tx.error || new Error("Proof delete failed.")); };
+      tx.onabort = () => { db.close(); reject(tx.error || new Error("Proof delete was cancelled.")); };
+    });
+  }
+
+  window.TRStorage = { load, save };
+  window.TRFiles = { saveProof, getProof, deleteProof, maxProofBytes: MAX_PROOF_BYTES };
 })();
