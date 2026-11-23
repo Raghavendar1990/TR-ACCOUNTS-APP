@@ -8,7 +8,7 @@ const btn=document.getElementById("cloudSetup");
 const notice=document.getElementById("moduleNotice");
 const missing=!firebaseConfig||Object.values(firebaseConfig).some(v=>!v||String(v).includes("YOUR_"));
 let auth,db,currentUser,syncing=false,timer,lastCloudJSON=null,conflictPaused=false;
-function status(msg){if(btn)btn.textContent=msg;if(notice)notice.textContent=msg;}
+function status(msg){if(notice)notice.textContent=msg;if(btn)btn.textContent=currentUser?"Sign out":"Google Login";}
 function jsonData(d){return JSON.stringify(d||{});}
 if(missing){status("Cloud: Firebase project config needed. App data remains local until configured.");}
 else{
