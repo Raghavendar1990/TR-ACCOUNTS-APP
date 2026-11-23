@@ -1,0 +1,6 @@
+{
+  "appId": "com.traccounts.app",
+  "appName": "TR Accounts",
+  "webDir": ".",
+  "bundledWebRuntime": false
+}
