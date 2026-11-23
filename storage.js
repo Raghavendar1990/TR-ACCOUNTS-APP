@@ -45,4 +45,11 @@
   }
 
   window.TRStorage = { load, save };
+  window.TRFiles = { saveProof, getProof, deleteProof };
+  const FILE_DB = "tr_accounts_files_v1";
+  function fileDb(){return new Promise((resolve,reject)=>{const req=indexedDB.open(FILE_DB,1);req.onupgradeneeded=()=>req.result.createObjectStore("proofs",{keyPath:"id"});req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
+  async function saveProof(id,file){const db=await fileDb();return new Promise((resolve,reject)=>{const tx=db.transaction("proofs","readwrite");tx.objectStore("proofs").put({id,name:file.name,type:file.type,blob:file,createdAt:new Date().toISOString()});tx.oncomplete=()=>{db.close();resolve(true)};tx.onerror=()=>{db.close();reject(tx.error)};});}
+  async function getProof(id){const db=await fileDb();return new Promise((resolve,reject)=>{const tx=db.transaction("proofs","readonly");const req=tx.objectStore("proofs").get(id);req.onsuccess=()=>{db.close();resolve(req.result||null)};req.onerror=()=>{db.close();reject(req.error)};});}
+  async function deleteProof(id){const db=await fileDb();return new Promise((resolve,reject)=>{const tx=db.transaction("proofs","readwrite");tx.objectStore("proofs").delete(id);tx.oncomplete=()=>{db.close();resolve(true)};tx.onerror=()=>{db.close();reject(tx.error)};});}
+
 })();
