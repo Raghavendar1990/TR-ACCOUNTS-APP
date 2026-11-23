@@ -1,7 +1,7 @@
 /* TR Accounts Cloud: Google sign-in, automatic sync, and conflict-safe uploads. Self-SMS is optional. */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, serverTimestamp, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp, runTransaction, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
 const btn=document.getElementById("cloudSetup"),notice=document.getElementById("moduleNotice");
@@ -26,37 +26,26 @@ function verifySelfSms(){const phone=normalizePhone(),code=(document.getElementB
 if(document.getElementById("sendPhoneOTP"))document.getElementById("sendPhoneOTP").addEventListener("click",e=>{e.preventDefault();e.stopPropagation();sendSelfSms();});
 if(document.getElementById("verifyPhoneOTP"))document.getElementById("verifyPhoneOTP").addEventListener("click",verifySelfSms);
 if(document.getElementById("registerPhone"))document.getElementById("registerPhone").addEventListener("input",()=>{});
+const SYNC_COL="syncEntries";
+const SYNC_ARRAYS=["people","transactions","recycleBin","businesses","businessTransactions","partners","partnerRecords"];
+function stableKey(kind,item,index){const raw=item?.id??item?.name??item?.person??item?.partner??item?.business??item?.date??index;return String(raw).replace(/[\\/\\.#$\\[\\]]/g,"_").slice(0,120);}
+function entryMap(data){const out={};for(const kind of SYNC_ARRAYS){const arr=Array.isArray(data?.[kind])?data[kind]:[];arr.forEach((item,index)=>{const key=kind+"__"+stableKey(kind,item,index);out[key]={kind,key,item};});}for(const k of ["language","theme"]){out["settings__"+k]={kind:"settings",key:"settings__"+k,item:{[k]:data?.[k]||(k==="language"?"en":"dark")}};}return out;}
+async function getEntryDocs(ref){const q=await getDocs(collection(ref,SYNC_COL));const out={};q.forEach(s=>out[s.id]=s.data());return out;}
+async function writeEntrySet(ref,data){const entries=entryMap(data),remote=await getEntryDocs(ref);for(const [key,val] of Object.entries(entries)){const old=remote[key];if(!old||jsonData(old.item)!==jsonData(val.item)||old.deleted)await setDoc(doc(ref,SYNC_COL,key),{kind:val.kind,item:val.item,deleted:false,updatedAt:serverTimestamp()});}for(const [key,old] of Object.entries(remote)){if(!entries[key]&&!old.deleted)await setDoc(doc(ref,SYNC_COL,key),{kind:old.kind,item:null,deleted:true,updatedAt:serverTimestamp()});}return entries;}
+function rebuildFromDocs(docs){const data={people:[],transactions:[],recycleBin:[],businesses:[],businessTransactions:[],partners:[],partnerRecords:[],language:"en",theme:"dark"};for(const docData of Object.values(docs)){if(!docData||docData.deleted||!docData.item)continue;if(docData.kind==="settings"){if(docData.item.language)data.language=docData.item.language;if(docData.item.theme)data.theme=docData.item.theme;}else if(SYNC_ARRAYS.includes(docData.kind))data[docData.kind].push(docData.item);}return data;}
+function mergeDatasets(local,remote){const out={...remote};for(const kind of SYNC_ARRAYS){const map=new Map();for(const item of [...(remote[kind]||[]),...(local[kind]||[])])map.set(stableKey(kind,item),item);out[kind]=Array.from(map.values());}out.language=local.language||remote.language||"en";out.theme=local.theme||remote.theme||"dark";return out;}
+async function migrateLegacy(ref,legacy){if(!legacy||!SYNC_ARRAYS.some(k=>Array.isArray(legacy[k])))return;const existing=await getEntryDocs(ref);if(Object.keys(existing).length)return;await writeEntrySet(ref,legacy);}
 async function syncData(){
  currentUser=auth?.currentUser||currentUser;if(!currentUser||syncing||!window.TRAccountsCloudData)return;
- syncing=true;status("Google login successful. Syncing cloud data…");
- try{
-  const ref=doc(db,"trAccountsUsers",currentUser.uid),snap=await getDoc(ref),local=window.TRAccountsCloudData();
-  if(!snap.exists()){await setDoc(ref,{data:local,updatedAt:serverTimestamp()},{merge:true});lastCloudJSON=jsonData(local);status("Cloud: initial upload complete");}
-  else{
-   const cloud=snap.data().data;
-   if(cloud&&confirm("Cloud data found. OK = load Cloud data on this device; Cancel = upload this device data to Cloud.")){
-    window.dispatchEvent(new CustomEvent("tr-accounts-load-cloud",{detail:cloud}));lastCloudJSON=jsonData(cloud);status("Cloud: data loaded");
-   }else{await setDoc(ref,{data:local,updatedAt:serverTimestamp()},{merge:true});lastCloudJSON=jsonData(local);status("Cloud: local data uploaded");}
-  }
- }catch(err){console.error("Cloud sync:",err);status("Cloud sync failed. Local data is safe. Check connection and Firestore rules.");}
+ syncing=true;status("Google login successful. Restoring and syncing…");
+ try{const ref=doc(db,"trAccountsUsers",currentUser.uid),snap=await getDoc(ref),local=window.TRAccountsCloudData();if(snap.exists())await migrateLegacy(ref,snap.data().data);const remoteDocs=await getEntryDocs(ref),remote=rebuildFromDocs(remoteDocs);const merged=mergeDatasets(local,remote);if(Object.keys(remoteDocs).length){window.dispatchEvent(new CustomEvent("tr-accounts-load-cloud",{detail:merged}));}else{await writeEntrySet(ref,local);}lastCloudJSON=jsonData(merged);await writeEntrySet(ref,merged);status("Cloud: automatic entry sync ready");}
+ catch(err){console.error("Cloud sync:",err);status("Cloud sync failed. Local data remains safe.");}
  finally{syncing=false;}
 }
-async function guardedUpload(force=false){
+async function guardedUpload(){
  currentUser=auth?.currentUser||currentUser;if(!currentUser||!window.TRAccountsCloudData){status("Google login session not detected. Tap Google Login again.");return false;}
- const ref=doc(db,"trAccountsUsers",currentUser.uid),local=window.TRAccountsCloudData(),localJSON=jsonData(local);
- try{
-  await runTransaction(db,async tx=>{const snap=await tx.get(ref);const remoteJSON=snap.exists()?jsonData(snap.data().data):null;if(!snap.exists()||remoteJSON===lastCloudJSON||force)tx.set(ref,{data:local,updatedAt:serverTimestamp()},{merge:true});else throw new Error("TR_CONFLICT");});
-  lastCloudJSON=localJSON;conflictPaused=false;status("Cloud: synced");return true;
- }catch(err){
-  if(err.message==="TR_CONFLICT"){
-   conflictPaused=true;status("Cloud conflict: review required");const snap=await getDoc(ref),remote=snap.exists()?snap.data().data:null;
-   const useCloud=confirm("Cloud data changed on another device. OK = load Cloud data (local changes may be replaced); Cancel = keep local and choose whether to overwrite Cloud.");
-   if(useCloud){if(remote)window.dispatchEvent(new CustomEvent("tr-accounts-load-cloud",{detail:remote}));lastCloudJSON=jsonData(remote);conflictPaused=false;status("Cloud: latest data loaded");return false;}
-   if(confirm("Overwrite Cloud with THIS device's data?")){return await guardedUpload(true);}
-   status("Sync paused. Local data remains safe.");return false;
-  }
-  console.error(err);status("Cloud sync failed. Local data is safe.");return false;
- }
+ try{const ref=doc(db,"trAccountsUsers",currentUser.uid),local=window.TRAccountsCloudData();await writeEntrySet(ref,local);lastCloudJSON=jsonData(local);status("Cloud: entry sync complete");return true;}
+ catch(err){console.error("Entry sync:",err);status("Cloud sync failed. Local data is safe.");return false;}
 }
 document.getElementById("profileSave")?.addEventListener("click",async()=>{const p=profileFromFields(),email=auth?.currentUser?.email||document.getElementById("profileEmail")?.value||"";if(p.age&&!/^\d+$/.test(p.age)||Number(p.age)>120){profileStatus("Please enter a valid age.");return;}p.email=email;saveProfileLocal(p);const user=auth?.currentUser;if(user&&db){try{await setDoc(doc(db,"trAccountsUsers",user.uid),{profile:{name:p.name,phone:p.phone,age:p.age,gender:p.gender,email:user.email||""},profileUpdatedAt:serverTimestamp()},{merge:true});profileStatus("Profile saved to this device and Google account.");}catch(e){console.error(e);profileStatus("Saved locally. Cloud profile update failed.");}}else profileStatus("Profile saved on this device. Sign in to sync profile to Google.");});
 if(missing){status("Firebase configuration is missing. Data remains on this device.");}
@@ -72,8 +61,8 @@ else{
    try{await signInWithPopup(auth,provider);}
    catch(err){console.warn("Popup sign-in fallback:",err);try{await signInWithRedirect(auth,provider);}catch(e){console.error(e);status("Google sign-in failed: "+(e.code||e.message));}}
   });
-  document.getElementById("cloudSyncNow")?.addEventListener("click",async()=>{currentUser=auth?.currentUser||currentUser;if(!currentUser){status("Google login session not detected. Tap Google Login again.");return;}if(syncing){status("Sync already running.");return;}syncing=true;try{await guardedUpload(false);}finally{syncing=false;}});
-  window.addEventListener("tr-accounts-data-updated",()=>{if(!currentUser||conflictPaused)return;clearTimeout(timer);timer=setTimeout(async()=>{if(syncing)return;syncing=true;try{await guardedUpload(false);}finally{syncing=false;}},1200);});
+  document.getElementById("cloudSyncNow")?.addEventListener("click",async()=>{currentUser=auth?.currentUser||currentUser;if(!currentUser){status("Google login session not detected. Tap Google Login again.");return;}if(syncing){status("Sync already running.");return;}syncing=true;try{await guardedUpload();}finally{syncing=false;}});
+  window.addEventListener("tr-accounts-data-updated",()=>{if(!currentUser)return;clearTimeout(timer);timer=setTimeout(async()=>{if(syncing)return;syncing=true;try{await guardedUpload();}finally{syncing=false;}},1200);});
   window.addEventListener("tr-accounts-load-cloud",e=>{const d=e.detail||{};if(!Array.isArray(d.people)||!Array.isArray(d.transactions)){status("Cloud data format invalid");return;}const payload={...d,pinHash:"",recoveryHash:""};if(window.TRAccountsApplyCloudData){window.TRAccountsApplyCloudData(payload);status("Cloud data loaded");}else{localStorage.setItem("tr_accounts_data_v1",JSON.stringify(payload));alert("Cloud data saved locally. Reload app to apply.");}});
  }catch(err){console.error(err);status("Firebase initialization failed: "+(err.code||err.message));}
 }
