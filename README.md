@@ -8,6 +8,7 @@ Mobile-first person-wise and business accounting app. This repository is an acti
 - Local JSON backup and restore; backup export attempts to include proof attachments encoded as Base64
 - Optional image/PDF proof attachment (700 KB maximum), stored in IndexedDB
 - Business ledgers and partner records
+- Business Suite: business dashboard, sales/invoices, purchases, inventory/stock alerts, customers, suppliers, expenses, employees/payroll entries, cash/bank/UPI records, reports, CSV export, print/PDF report, business profile settings, day closing, and customer/supplier ledger summaries
 - Telugu/English UI labels and dark/light themes
 - Local PIN hash and recovery-code flow
 - Google sign-in, same-Gmail owner access across devices, and Firestore cloud sync\n- Required registered-mobile OTP verification on every device before Cloud Sync; Firebase Phone provider and phone-claim Firestore rules are required\n- Different-Gmail device access remains owner-approval based
