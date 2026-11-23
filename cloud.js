@@ -36,8 +36,10 @@ async function verifyPhoneOTP(){
   if(!providers.includes("phone")){await linkWithCredential(currentUser,credential);}
   if(currentUser.phoneNumber!==verifiedPhone){updatePhoneStatus("The OTP number must match the registered phone already linked to this Google account.");return;}
   localStorage.setItem("tr_accounts_phone_verified_"+currentUser.uid,verifiedPhone);
+  await currentUser.getIdToken(true);
   updatePhoneStatus("Phone number verified on this device. Cloud sync enabled.");
   status("Google account and registered number verified.");
+  listenForOwnerRequests();
   await syncData();
  }catch(err){console.error(err);updatePhoneStatus(err.code==="auth/provider-already-linked"?"Phone is already linked. OTP was not accepted for this account; try again or contact support.":"OTP verification failed. Check the code and try again.");}
 }
@@ -47,12 +49,56 @@ else{
   const app=initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);
   onAuthStateChanged(auth,async user=>{
    currentUser=user||null;lastCloudJSON=null;conflictPaused=false;
+   dataOwnerUid=localStorage.getItem("tr_accounts_owner_uid")||null;
    if(!user){status("Google Login");return;}
-   status("Cloud connected: "+(user.displayName||user.email||"Google account"));
-   await syncData();
+   const uidEl=document.getElementById("ownerUidDisplay");if(uidEl)uidEl.textContent=user.uid;
+   const phoneEl=document.getElementById("registerPhone");
+   const savedPhone=localStorage.getItem("tr_accounts_phone_verified_"+user.uid);
+   if(phoneEl&&savedPhone)phoneEl.value=savedPhone;
+   if(phoneVerifiedForThisDevice()){
+    updatePhoneStatus("Registered number verified on this device.");
+    status("Google account and registered number verified.");
+    listenForOwnerRequests();
+    await syncData();
+   }else{
+    status("Google Login complete. Verify registered phone number to enable Cloud Sync.");
+    updatePhoneStatus("Phone verification is required on every device before Cloud Sync.");
+   }
   });
-\n  // Owner-approved second-device access. A second device requests access to the owner's UID.\n  async function requestOwnerApproval(){\n   if(!currentUser){status("Sign in first.");return;}\n   const ownerUid=(document.getElementById("ownerUidInput")?.value||"").trim();\n   if(!ownerUid||ownerUid===currentUser.uid){status("Enter the owner UID from the first device.");return;}\n   try{const reqRef=doc(db,"trAccountsUsers",ownerUid,"deviceRequests",currentUser.uid);await setDoc(reqRef,{requesterUid:currentUser.uid,requesterEmail:currentUser.email||"",requesterName:currentUser.displayName||"",status:"pending",requestedAt:serverTimestamp()},{merge:true});\n    const statusEl=document.getElementById("deviceRequestStatus");if(statusEl)statusEl.textContent="Approval request sent. Waiting for owner approval…";\n    if(requestListener)requestListener();requestListener=onSnapshot(reqRef,snap=>{if(snap.exists()&&snap.data().status==="approved"){dataOwnerUid=ownerUid;localStorage.setItem("tr_accounts_owner_uid",ownerUid);lastCloudJSON=null;status("Second device approved. Connecting to owner's account…");syncData();}else if(snap.exists()&&snap.data().status==="rejected"){if(statusEl)statusEl.textContent="Owner rejected this device request.";}});\n   }catch(err){console.error(err);status("Could not send approval request. Check Firestore rules and connection.");}\n  }\n  function listenForOwnerRequests(){\n   if(!currentUser)return;const listEl=document.getElementById("deviceRequestsList");if(ownerRequestsListener)ownerRequestsListener();\n   ownerRequestsListener=onSnapshot(collection(db,"trAccountsUsers",currentUser.uid,"deviceRequests"),snap=>{\n    if(!listEl)return;const pending=snap.docs.filter(d=>d.data().status==="pending");\n    listEl.innerHTML=pending.length?pending.map(d=>{const x=d.data();return '<div class="person"><div><b>'+String(x.requesterName||"New device").replace(/[&<>"]/g,"")+'</b><div class="person-sub">'+String(x.requesterEmail||"").replace(/[&<>"]/g,"")+'<br>UID: '+d.id+'</div></div><div class="person-tools"><button class="soft" data-device-approve="'+d.id+'">Approve</button><button class="soft danger" data-device-reject="'+d.id+'">Reject</button></div></div>';}).join(""):'<div class="person-sub">No pending device requests.</div>';\n    listEl.querySelectorAll("[data-device-approve]").forEach(b=>b.onclick=()=>approveDevice(b.dataset.deviceApprove,true));listEl.querySelectorAll("[data-device-reject]").forEach(b=>b.onclick=()=>approveDevice(b.dataset.deviceReject,false));\n   },err=>{console.warn("Device request listener:",err);if(listEl)listEl.textContent="Device requests unavailable. Check Firestore rules.";});\n  }\n  async function approveDevice(deviceUid,approved){\n   if(!currentUser||!confirm((approved?"Approve":"Reject")+" this second-device request?"))return;\n   try{const reqRef=doc(db,"trAccountsUsers",currentUser.uid,"deviceRequests",deviceUid);if(approved)await updateDoc(doc(db,"trAccountsUsers",currentUser.uid),{approvedDevices:arrayUnion(deviceUid)});await updateDoc(reqRef,{status:approved?"approved":"rejected",reviewedAt:serverTimestamp()});status(approved?"Device approved. It can now connect to this owner's cloud data.":"Device request rejected.");}\n   catch(err){console.error(err);status("Approval failed. Publish updated Firestore rules first.");}\n  }\n  document.getElementById("requestDeviceBtn")?.addEventListener("click",requestOwnerApproval);\n  document.getElementById("sendPhoneOTP")?.addEventListener("click",sendPhoneOTP);\n  document.getElementById("verifyPhoneOTP")?.addEventListener("click",verifyPhoneOTP);\n  document.getElementById("registerPhone")?.addEventListener("input",e=>{const saved=localStorage.getItem("tr_accounts_phone_verified_"+(currentUser?.uid||""));if(saved&&e.target.value.trim()!==saved){localStorage.removeItem("tr_accounts_phone_verified_"+currentUser.uid);updatePhoneStatus("Number changed. Verify the new number again before syncing.");}});\n  async function syncData(){
-   if(!currentUser||syncing||!window.TRAccountsCloudData)return;
+
+  // Owner-approved second-device access. A second device requests access to the owner's UID.
+  async function requestOwnerApproval(){
+   if(!currentUser){status("Sign in first.");return;}
+   const ownerUid=(document.getElementById("ownerUidInput")?.value||"").trim();
+   if(!ownerUid||ownerUid===currentUser.uid){status("Enter the owner UID from the first device.");return;}
+   try{const reqRef=doc(db,"trAccountsUsers",ownerUid,"deviceRequests",currentUser.uid);await setDoc(reqRef,{requesterUid:currentUser.uid,requesterEmail:currentUser.email||"",requesterName:currentUser.displayName||"",status:"pending",requestedAt:serverTimestamp()},{merge:true});
+    const statusEl=document.getElementById("deviceRequestStatus");if(statusEl)statusEl.textContent="Approval request sent. Waiting for owner approval…";
+    if(requestListener)requestListener();requestListener=onSnapshot(reqRef,snap=>{if(snap.exists()&&snap.data().status==="approved"){dataOwnerUid=ownerUid;localStorage.setItem("tr_accounts_owner_uid",ownerUid);lastCloudJSON=null;status("Second device approved. Connecting to owner's account…");syncData();}else if(snap.exists()&&snap.data().status==="rejected"){if(statusEl)statusEl.textContent="Owner rejected this device request.";}});
+   }catch(err){console.error(err);status("Could not send approval request. Check Firestore rules and connection.");}
+  }
+  function listenForOwnerRequests(){
+   if(!currentUser)return;const listEl=document.getElementById("deviceRequestsList");if(ownerRequestsListener)ownerRequestsListener();
+   ownerRequestsListener=onSnapshot(collection(db,"trAccountsUsers",currentUser.uid,"deviceRequests"),snap=>{
+    if(!listEl)return;const pending=snap.docs.filter(d=>d.data().status==="pending");
+    listEl.innerHTML=pending.length?pending.map(d=>{const x=d.data();return '<div class="person"><div><b>'+String(x.requesterName||"New device").replace(/[&<>"]/g,"")+'</b><div class="person-sub">'+String(x.requesterEmail||"").replace(/[&<>"]/g,"")+'<br>UID: '+d.id+'</div></div><div class="person-tools"><button class="soft" data-device-approve="'+d.id+'">Approve</button><button class="soft danger" data-device-reject="'+d.id+'">Reject</button></div></div>';}).join(""):'<div class="person-sub">No pending device requests.</div>';
+    listEl.querySelectorAll("[data-device-approve]").forEach(b=>b.onclick=()=>approveDevice(b.dataset.deviceApprove,true));listEl.querySelectorAll("[data-device-reject]").forEach(b=>b.onclick=()=>approveDevice(b.dataset.deviceReject,false));
+   },err=>{console.warn("Device request listener:",err);if(listEl)listEl.textContent="Device requests unavailable. Check Firestore rules.";});
+  }
+  async function approveDevice(deviceUid,approved){
+   if(!currentUser||!confirm((approved?"Approve":"Reject")+" this second-device request?"))return;
+   try{const reqRef=doc(db,"trAccountsUsers",currentUser.uid,"deviceRequests",deviceUid);if(approved)await updateDoc(doc(db,"trAccountsUsers",currentUser.uid),{approvedDevices:arrayUnion(deviceUid)});await updateDoc(reqRef,{status:approved?"approved":"rejected",reviewedAt:serverTimestamp()});status(approved?"Device approved. It can now connect to this owner's cloud data.":"Device request rejected.");}
+   catch(err){console.error(err);status("Approval failed. Publish updated Firestore rules first.");}
+  }
+  document.getElementById("requestDeviceBtn")?.addEventListener("click",requestOwnerApproval);
+  document.getElementById("sendPhoneOTP")?.addEventListener("click",sendPhoneOTP);
+  document.getElementById("verifyPhoneOTP")?.addEventListener("click",verifyPhoneOTP);
+  document.getElementById("registerPhone")?.addEventListener("input",e=>{
+   const saved=localStorage.getItem("tr_accounts_phone_verified_"+(currentUser?.uid||""));
+   if(saved&&e.target.value.trim()!==saved){localStorage.removeItem("tr_accounts_phone_verified_"+currentUser.uid);updatePhoneStatus("Number changed. Verify the new number again before syncing.");}
+  });
+  document.getElementById("registerPhone")?.addEventListener("input",e=>{const saved=localStorage.getItem("tr_accounts_phone_verified_"+(currentUser?.uid||""));if(saved&&e.target.value.trim()!==saved){localStorage.removeItem("tr_accounts_phone_verified_"+currentUser.uid);updatePhoneStatus("Number changed. Verify the new number again before syncing.");}});
+  async function syncData(){
+   if(!currentUser||!phoneVerifiedForThisDevice()||syncing||!window.TRAccountsCloudData)return;
    syncing=true;
    try{
     const ref=doc(db,"trAccountsUsers",dataOwnerUid||currentUser.uid),snap=await getDoc(ref),local=window.TRAccountsCloudData();
@@ -73,7 +119,7 @@ else{
    finally{syncing=false;}
   }
   async function guardedUpload(force=false){
-   if(!currentUser||!window.TRAccountsCloudData)return;
+   if(!currentUser||!phoneVerifiedForThisDevice()||!window.TRAccountsCloudData){status("Verify your registered phone number before syncing.");return false;}
    const ref=doc(db,"trAccountsUsers",dataOwnerUid||currentUser.uid),local=window.TRAccountsCloudData(),localJSON=jsonData(local);
    try{
     await runTransaction(db,async tx=>{
@@ -110,6 +156,7 @@ else{
   const syncBtn=document.getElementById("cloudSyncNow");
   syncBtn?.addEventListener("click",async()=>{
    if(!currentUser){status("Please sign in to Google first.");return;}
+   if(!phoneVerifiedForThisDevice()){status("Verify your registered phone number before Cloud Sync.");updatePhoneStatus("Verification required before Cloud Sync.");return;}
    if(syncing){status("Cloud sync is already running.");return;}
    syncing=true;status("Cloud: checking latest data…");
    try{await guardedUpload(false);}finally{syncing=false;}
