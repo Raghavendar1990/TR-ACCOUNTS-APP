@@ -34,6 +34,7 @@ async function verifyPhoneOTP(){
   const credential=PhoneAuthProvider.credential(phoneVerificationId,code);
   const providers=currentUser.providerData.map(p=>p.providerId);
   if(!providers.includes("phone")){await linkWithCredential(currentUser,credential);}
+  if(currentUser.phoneNumber!==verifiedPhone){updatePhoneStatus("The OTP number must match the registered phone already linked to this Google account.");return;}
   localStorage.setItem("tr_accounts_phone_verified_"+currentUser.uid,verifiedPhone);
   updatePhoneStatus("Phone number verified on this device. Cloud sync enabled.");
   status("Google account and registered number verified.");
