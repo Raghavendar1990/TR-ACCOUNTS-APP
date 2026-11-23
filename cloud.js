@@ -18,7 +18,7 @@ if(document.getElementById("sendPhoneOTP"))document.getElementById("sendPhoneOTP
 if(document.getElementById("verifyPhoneOTP"))document.getElementById("verifyPhoneOTP").addEventListener("click",verifySelfSms);
 if(document.getElementById("registerPhone"))document.getElementById("registerPhone").addEventListener("input",()=>{});
 async function syncData(){
- if(!currentUser||syncing||!window.TRAccountsCloudData)return;
+ currentUser=auth?.currentUser||currentUser;if(!currentUser||syncing||!window.TRAccountsCloudData)return;
  syncing=true;status("Google login successful. Syncing cloud data…");
  try{
   const ref=doc(db,"trAccountsUsers",currentUser.uid),snap=await getDoc(ref),local=window.TRAccountsCloudData();
@@ -33,7 +33,7 @@ async function syncData(){
  finally{syncing=false;}
 }
 async function guardedUpload(force=false){
- if(!currentUser||!window.TRAccountsCloudData){status("Sign in to Google before syncing.");return false;}
+ currentUser=auth?.currentUser||currentUser;if(!currentUser||!window.TRAccountsCloudData){status("Google login session not detected. Tap Google Login again.");return false;}
  const ref=doc(db,"trAccountsUsers",currentUser.uid),local=window.TRAccountsCloudData(),localJSON=jsonData(local);
  try{
   await runTransaction(db,async tx=>{const snap=await tx.get(ref);const remoteJSON=snap.exists()?jsonData(snap.data().data):null;if(!snap.exists()||remoteJSON===lastCloudJSON||force)tx.set(ref,{data:local,updatedAt:serverTimestamp()},{merge:true});else throw new Error("TR_CONFLICT");});
@@ -55,14 +55,14 @@ else{
   const app=initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);
   // Process a pending mobile redirect result as well as popup sign-in.
   getRedirectResult(auth).catch(e=>{if(e&&e.code!=="auth/no-auth-event")console.warn("Google redirect result:",e);});
-  onAuthStateChanged(auth,async user=>{currentUser=user||null;lastCloudJSON=null;conflictPaused=false;if(!user){status("Google Login");return;}status("Google login successful. Sync starting…");await syncData();});
+  onAuthStateChanged(auth,async user=>{currentUser=user||null;lastCloudJSON=null;conflictPaused=false;status(user?"Google account connected.":"Google Login");if(!user)return;await syncData();});
   if(btn)btn.addEventListener("click",async()=>{
    if(currentUser){try{await signOut(auth);status("Signed out.");}catch(e){console.error(e);status("Sign out failed.");}return;}
    const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:"select_account"});
    try{await signInWithPopup(auth,provider);}
    catch(err){console.warn("Popup sign-in fallback:",err);try{await signInWithRedirect(auth,provider);}catch(e){console.error(e);status("Google sign-in failed: "+(e.code||e.message));}}
   });
-  document.getElementById("cloudSyncNow")?.addEventListener("click",async()=>{if(!currentUser){status("Please sign in with Google first.");return;}if(syncing){status("Sync already running.");return;}syncing=true;try{await guardedUpload(false);}finally{syncing=false;}});
+  document.getElementById("cloudSyncNow")?.addEventListener("click",async()=>{currentUser=auth?.currentUser||currentUser;if(!currentUser){status("Google login session not detected. Tap Google Login again.");return;}if(syncing){status("Sync already running.");return;}syncing=true;try{await guardedUpload(false);}finally{syncing=false;}});
   window.addEventListener("tr-accounts-data-updated",()=>{if(!currentUser||conflictPaused)return;clearTimeout(timer);timer=setTimeout(async()=>{if(syncing)return;syncing=true;try{await guardedUpload(false);}finally{syncing=false;}},1200);});
   window.addEventListener("tr-accounts-load-cloud",e=>{const d=e.detail||{};if(!Array.isArray(d.people)||!Array.isArray(d.transactions)){status("Cloud data format invalid");return;}const payload={...d,pinHash:"",recoveryHash:""};if(window.TRAccountsApplyCloudData){window.TRAccountsApplyCloudData(payload);status("Cloud data loaded");}else{localStorage.setItem("tr_accounts_data_v1",JSON.stringify(payload));alert("Cloud data saved locally. Reload app to apply.");}});
  }catch(err){console.error(err);status("Firebase initialization failed: "+(err.code||err.message));}
