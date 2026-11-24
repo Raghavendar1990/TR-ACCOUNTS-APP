@@ -32,7 +32,7 @@ jobs:
               marker = "dependencies {"
               if marker not in root_text:
                   raise SystemExit("Could not locate root Gradle dependencies block")
-              root_text = root_text.replace(marker, marker + chr(10) + "        classpath 'com.google.gms:google-services:4.6.0'", 1)
+              root_text = root_text.replace(marker, marker + chr(10) + "        classpath 'com.google.gms:google-services:4.4.4'", 1)
               root.write_text(root_text)
           app_text = app.read_text()
           if "com.google.gms.google-services" not in app_text:
