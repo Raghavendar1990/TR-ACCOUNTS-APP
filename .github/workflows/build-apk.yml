@@ -35,5 +35,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: TR-Accounts-v2.0-Verified-APK
-          path: verified/TR-Accounts-v1.1.6.apk
+          path: verified/TR-Accounts-v2.0.apk
           retention-days: 30
