@@ -9,7 +9,7 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const today=()=>new Date().toISOString().slice(0,10);
 const mode=()=>localStorage.getItem("tr_account_mode_v1")||"personal";
 let activeTab="dashboard",selectedBusiness=localStorage.getItem("tr_business_active_name")||"";
-function save(){const raw=JSON.stringify(data);localStorage.setItem(KEY,raw);localStorage.setItem(BACKUP_KEY,raw);window.dispatchEvent(new CustomEvent("tr-accounts-data-updated"));}
+function save(){try{const raw=JSON.stringify(data);localStorage.setItem(KEY,raw);localStorage.setItem(BACKUP_KEY,raw);window.dispatchEvent(new CustomEvent("tr-accounts-data-updated"));return true;}catch(err){console.error("TR Business Suite save failed",err);try{window.dispatchEvent(new CustomEvent("tr-accounts-save-error",{detail:err}));}catch{}return false;}}
 function cloudData(){return Object.fromEntries(Object.keys(empty()).filter(k=>k!=="settings").map(k=>[k,data[k]]).concat([["businessSuiteSettings",data.settings]]));}
 window.TRBusinessCloudData=cloudData;
 window.TRBusinessApplyCloudData=d=>{Object.keys(empty()).forEach(k=>{if(Array.isArray(d[k]))data[k]=d[k];});if(d.settingsByBusiness&&typeof d.settingsByBusiness==="object")data.settingsByBusiness=d.settingsByBusiness;if(d.cashAccountsByBusiness&&typeof d.cashAccountsByBusiness==="object")data.cashAccountsByBusiness=d.cashAccountsByBusiness;if(d.businessSuiteSettings)data.settings=d.businessSuiteSettings;saveLocalOnly();render();};
