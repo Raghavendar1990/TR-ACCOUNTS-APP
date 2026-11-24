@@ -17,8 +17,13 @@
       try { const parsed=JSON.parse(raw); return parsed && typeof parsed === "object" ? parsed : null; }
       catch { return null; }
     };
-    let parsed=parseStore(localStorage.getItem(KEY));
-    if(!parsed) parsed=parseStore(localStorage.getItem(BACKUP_KEY));
+    let primary=parseStore(localStorage.getItem(KEY));
+    let backup=parseStore(localStorage.getItem(BACKUP_KEY));
+    const populated=data=>!!data&&((Array.isArray(data.people)&&data.people.length)||(Array.isArray(data.transactions)&&data.transactions.length)||(Array.isArray(data.recycleBin)&&data.recycleBin.length)||(Array.isArray(data.businesses)&&data.businesses.length)||(Array.isArray(data.businessTransactions)&&data.businessTransactions.length)||(Array.isArray(data.partners)&&data.partners.length)||(Array.isArray(data.partnerRecords)&&data.partnerRecords.length)||(data.pinHash||data.recoveryHash));
+    let parsed=primary;
+    // Recover a populated backup when the primary store is valid but unexpectedly empty.
+    if(primary&&!populated(primary)&&backup&&populated(backup)) parsed=backup;
+    if(!parsed) parsed=backup;
     if(!parsed) return { ...DEFAULTS };
     return {
       people: Array.isArray(parsed.people) ? parsed.people : [],
