@@ -20,10 +20,20 @@ jobs:
       - run: npx cap add android
       - run: npx cap sync android
       - name: Set Android app version
-        run: sed -i -E 's/versionCode [0-9]+/versionCode 11/; s/versionName "[^"]+"/versionName "1.1"/' android/app/build.gradle
-      - run: cd android && ./gradlew assembleDebug
+        run: sed -i -E 's/versionCode [0-9]+/versionCode 12/; s/versionName "[^"]+"/versionName "1.1.1"/' android/app/build.gradle
+      - name: Build APK
+        run: cd android && ./gradlew assembleDebug
+      - name: Verify APK signature and package
+        run: |
+          APK=android/app/build/outputs/apk/debug/app-debug.apk
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)
+          AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -n 1)
+          "$APKSIGNER" verify --verbose "$APK"
+          "$AAPT" dump badging "$APK" | grep -E "package:|sdkVersion:|targetSdkVersion:"
+          mkdir -p verified
+          cp "$APK" verified/TR-Accounts-v1.1.1.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: TR-Accounts-debug-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: TR-Accounts-v1.1.1-Verified-APK
+          path: verified/TR-Accounts-v1.1.1.apk
           retention-days: 30
