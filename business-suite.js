@@ -1,19 +1,19 @@
 /* TR Accounts Business Suite - extended business tools */
 (function(){
 "use strict";
-const KEY="tr_accounts_business_suite_v1";
+const KEY="tr_accounts_business_suite_v1";const BACKUP_KEY="tr_accounts_business_suite_backup_v1";
 const empty=()=>({customers:[],suppliers:[],inventory:[],sales:[],purchases:[],expenses:[],payments:[],employees:[],payroll:[],cashAccounts:[{name:"Cash",opening:0},{name:"Bank",opening:0},{name:"UPI",opening:0}],cashTransactions:[],settings:{businessName:"",address:"",phone:"",gstin:"",currency:"INR"},settingsByBusiness:{},cashAccountsByBusiness:{}});
-let data;try{data={...empty(),...JSON.parse(localStorage.getItem(KEY)||"{}")};}catch{data=empty();}
+let data;try{let raw=localStorage.getItem(KEY);if(!raw)raw=localStorage.getItem(BACKUP_KEY);data={...empty(),...JSON.parse(raw||"{}")};}catch{data=empty();}
 const money=n=>"₹"+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:2});
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const today=()=>new Date().toISOString().slice(0,10);
 const mode=()=>localStorage.getItem("tr_account_mode_v1")||"personal";
 let activeTab="dashboard",selectedBusiness=localStorage.getItem("tr_business_active_name")||"";
-function save(){localStorage.setItem(KEY,JSON.stringify(data));window.dispatchEvent(new CustomEvent("tr-accounts-data-updated"));}
+function save(){const raw=JSON.stringify(data);localStorage.setItem(KEY,raw);localStorage.setItem(BACKUP_KEY,raw);window.dispatchEvent(new CustomEvent("tr-accounts-data-updated"));}
 function cloudData(){return Object.fromEntries(Object.keys(empty()).filter(k=>k!=="settings").map(k=>[k,data[k]]).concat([["businessSuiteSettings",data.settings]]));}
 window.TRBusinessCloudData=cloudData;
 window.TRBusinessApplyCloudData=d=>{Object.keys(empty()).forEach(k=>{if(Array.isArray(d[k]))data[k]=d[k];});if(d.settingsByBusiness&&typeof d.settingsByBusiness==="object")data.settingsByBusiness=d.settingsByBusiness;if(d.cashAccountsByBusiness&&typeof d.cashAccountsByBusiness==="object")data.cashAccountsByBusiness=d.cashAccountsByBusiness;if(d.businessSuiteSettings)data.settings=d.businessSuiteSettings;saveLocalOnly();render();};
-function saveLocalOnly(){localStorage.setItem(KEY,JSON.stringify(data));}
+function saveLocalOnly(){const raw=JSON.stringify(data);localStorage.setItem(KEY,raw);localStorage.setItem(BACKUP_KEY,raw);}
 function businessNames(){return (window.TRAccountsCloudData?.().businesses||[]).filter(x=>!x.archived).map(x=>x.name);}
 function activeBiz(){const names=businessNames();if(selectedBusiness&&names.includes(selectedBusiness))return selectedBusiness;selectedBusiness=names[0]||"Business";return selectedBusiness;}
 const BUSINESS_TYPES=["Retail / Shop","Kirana / Grocery","Wholesale","Trading","Clothing / Fashion","Electronics","Mobile Shop","Hardware","Medical Store","Restaurant / Hotel","Manufacturing","Construction","Transport","Service Business","Agriculture","Real Estate","Freelancer","Other"];
