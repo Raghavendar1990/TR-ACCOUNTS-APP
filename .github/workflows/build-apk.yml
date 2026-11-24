@@ -18,8 +18,39 @@ jobs:
       - run: mkdir -p web && cp index.html storage.js manifest.webmanifest sw.js cloud.js business-suite.js firebase-config.js TR_Accounts_Logo_Transparent-1.png web/ && cp -r icons web/icons
       - run: npm install
       - run: npx esbuild cloud.js --bundle --format=esm --outfile=web/cloud.js
-      - run: npx cap add android
-      - run: npx cap sync android
+      - name: Configure Firebase Android and sync Capacitor
+        run: |
+          npx cap add android
+          cp google-services.json android/app/google-services.json
+          python3 - <<'PY'
+          from pathlib import Path
+          root = Path("android/build.gradle")
+          app = Path("android/app/build.gradle")
+          variables = Path("android/variables.gradle")
+          root_text = root.read_text()
+          if "com.google.gms:google-services" not in root_text:
+              marker = "dependencies {"
+              if marker not in root_text:
+                  raise SystemExit("Could not locate root Gradle dependencies block")
+              root_text = root_text.replace(marker, marker + "\\n        classpath 'com.google.gms:google-services:4.6.0'", 1)
+              root.write_text(root_text)
+          app_text = app.read_text()
+          if "com.google.gms.google-services" not in app_text:
+              marker = "apply plugin: 'com.android.application'"
+              if marker not in app_text:
+                  raise SystemExit("Could not locate Android application plugin")
+              app_text = app_text.replace(marker, marker + "\\napply plugin: 'com.google.gms.google-services'", 1)
+              app.write_text(app_text)
+          if variables.exists():
+              v = variables.read_text()
+              if "rgcfaIncludeGoogle" not in v:
+                  marker = "ext {"
+                  if marker not in v:
+                      raise SystemExit("Could not locate variables.gradle ext block")
+                  v = v.replace(marker, marker + "\\n    rgcfaIncludeGoogle = true\\n    androidxCredentialsVersion = '1.3.0'", 1)
+                  variables.write_text(v)
+          PY
+          npx cap sync android
       - name: Set Android app version
         run: sed -i -E 's/versionCode [0-9]+/versionCode 18/; s/versionName "[^"]+"/versionName "2.0"/' android/app/build.gradle
       - name: Build APK
