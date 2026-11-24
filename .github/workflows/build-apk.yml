@@ -51,14 +51,17 @@ jobs:
                   variables.write_text(v)
           PY
           npx cap sync android
-      - name: Configure stable Android signing
+      - name: Configure optional stable Android signing
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          test -n "$ANDROID_KEYSTORE_BASE64"
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ] || [ -z "$ANDROID_KEYSTORE_PASSWORD" ] || [ -z "$ANDROID_KEY_ALIAS" ] || [ -z "$ANDROID_KEY_PASSWORD" ]; then
+            echo "Stable signing secrets not configured; using Android debug signing for this build."
+            exit 0
+          fi
           mkdir -p android/app/keystore
           echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/keystore/tr-accounts-release.jks
           python3 - <<'PY'
@@ -81,13 +84,9 @@ jobs:
               }
           """
           if "ANDROID_KEYSTORE_PATH" not in s:
-              marker = "android {"
-              if marker not in s:
-                  raise SystemExit("Could not locate Android Gradle block")
-              s = s.replace(marker, marker + block, 1)
+              s = s.replace("android {", "android {" + block, 1)
               p.write_text(s)
           PY
-        # Keep the keystore outside the repository and remove it after the build.
       - name: Set Android app version
         run: sed -i -E 's/versionCode [0-9]+/versionCode 22/; s/versionName "[^"]+"/versionName "2.0.4"/' android/app/build.gradle
       - name: Build APK
@@ -105,10 +104,10 @@ jobs:
           "$APKSIGNER" verify --verbose "$APK"
           "$AAPT" dump badging "$APK" | grep -E "package:|sdkVersion:|targetSdkVersion:"
           mkdir -p verified
-          cp "$APK" verified/TR-Accounts-v2.0.4.apk
+          cp "$APK" verified/TR-Accounts-v2.0.5.apk
           rm -f android/app/keystore/tr-accounts-release.jks
       - uses: actions/upload-artifact@v5
         with:
-          name: TR-Accounts-v2.0.4-Purple-Cyan-Theme
-          path: verified/TR-Accounts-v2.0.4.apk
+          name: TR-Accounts-v2.0.5-Purple-Cyan-Theme
+          path: verified/TR-Accounts-v2.0.5.apk
           retention-days: 30
