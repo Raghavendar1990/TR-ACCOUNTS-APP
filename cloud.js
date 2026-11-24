@@ -1,8 +1,6 @@
 /* TR Accounts Cloud: Google sign-in, automatic sync, and conflict-safe uploads. Self-SMS is optional. */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, reauthenticateWithPopup, setPersistence, browserLocalPersistence, signInWithCredential } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { FirebaseAuthentication } from "@capacitor-firebase/authentication";
-import { Capacitor } from "@capacitor/core";
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp, runTransaction, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
@@ -15,6 +13,8 @@ function jsonData(d){return JSON.stringify(d||{});}
 
 // Profile fields: Gmail is read-only from Google Auth; other fields are editable.
 const PROFILE_KEY="tr_accounts_profile_v1";
+const isNativeApp=()=>!!window.Capacitor?.isNativePlatform?.();
+async function nativeGoogleSignIn(){const {FirebaseAuthentication}=await import("@capacitor-firebase/authentication");const result=await FirebaseAuthentication.signInWithGoogle({skipNativeAuth:true});const idToken=result?.credential?.idToken;if(!idToken)throw new Error("Google ID token missing. Check Firebase Android SHA-1 and OAuth setup.");await signInWithCredential(auth,GoogleAuthProvider.credential(idToken));}
 function loadProfileLocal(){try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||"{}")}catch{return {}}}
 function fillProfile(p={}){const el=id=>document.getElementById(id);if(el("profileEmail"))el("profileEmail").value=p.email||"";if(el("profileName"))el("profileName").value=p.name||"";if(el("profilePhone"))el("profilePhone").value=p.phone||"";if(el("profileDOB")){el("profileDOB").value=p.dob||"";el("profileDOB").dispatchEvent(new Event("change"));}if(el("profileGender"))el("profileGender").value=p.gender||"";}
 function profileFromFields(){const dob=(document.getElementById("profileDOB")?.value||"").trim();let age="";if(dob){const d=new Date(dob+"T00:00:00"),t=new Date();age=t.getFullYear()-d.getFullYear();const m=t.getMonth()-d.getMonth();if(m<0||(m===0&&t.getDate()<d.getDate()))age--;if(age<0||age>120)age="";}return {name:(document.getElementById("profileName")?.value||"").trim(),phone:(document.getElementById("profilePhone")?.value||"").trim(),dob,age:String(age),gender:document.getElementById("profileGender")?.value||""};}
@@ -55,7 +55,7 @@ if(missing){status("Firebase configuration is missing. Data remains on this devi
 else{
  try{
   const app=initializeApp(firebaseConfig);auth=getAuth(app);await setPersistence(auth,browserLocalPersistence);db=getFirestore(app);
-  window.TRAccountsReverifyGoogle=async()=>{const user=auth?.currentUser;if(!user)return false;const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:"select_account"});if(Capacitor.isNativePlatform()){const nativeResult=await FirebaseAuthentication.signInWithGoogle({skipNativeAuth:true});const idToken=nativeResult?.credential?.idToken;if(!idToken)return false;await signInWithCredential(auth,GoogleAuthProvider.credential(idToken));return true;}const result=await reauthenticateWithPopup(user,provider);return !!result?.user;};
+  window.TRAccountsReverifyGoogle=async()=>{const user=auth?.currentUser;if(!user)return false;const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:"select_account"});if(isNativeApp()){await nativeGoogleSignIn();return true;}const result=await reauthenticateWithPopup(user,provider);return !!result?.user;};
   onAuthStateChanged(auth,async user=>{currentUser=user||null;authReadyResolve(user||null);lastCloudJSON=null;conflictPaused=false;status(user?"Google account connected.":"Google Login");if(!user){fillProfile(loadProfileLocal());return;}try{const pRef=doc(db,"trAccountsUsers",user.uid),pSnap=await getDoc(pRef),cloudProfile=pSnap.exists()?(pSnap.data().profile||{}):{},localProfile=loadProfileLocal();fillProfile({email:user.email||"",name:cloudProfile.name||localProfile.name||user.displayName||"",phone:cloudProfile.phone||localProfile.phone||"",dob:cloudProfile.dob||localProfile.dob||"",gender:cloudProfile.gender||localProfile.gender||""});}catch(e){fillProfile({email:user.email||"",...loadProfileLocal()});}await syncData();});
   if(btn)btn.addEventListener("click",async()=>{
    if(currentUser){try{await signOut(auth);status("Signed out.");}catch(e){console.error(e);status("Sign out failed.");}return;}
