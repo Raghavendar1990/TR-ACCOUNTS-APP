@@ -95,11 +95,9 @@
 <details id="cloudSyncDetails" style="margin-top:0;border-top:0;padding-top:0">
 <summary style="cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center"><b>Gmail</b><span style="color:var(--muted)">⌄</span></summary>
 <div style="margin-top:12px">
-<div class="person-sub">Backup & cloud account controls</div>
-<div class="person-tools" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px">
-<button class="soft" id="backupSoon">Backup</button><button class="soft" id="restoreNow">Restore</button><button class="soft" id="cloudSyncNow" data-t="syncNow">Sync Now</button>
-</div>
-<div class="person-tools" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px"><button class="soft" id="cloudSetup">Mail Login / Logout</button></div>
+<div class="person-tools" style="margin-top:0;display:flex;flex-wrap:wrap;gap:8px"><button class="soft" id="cloudSetup">Google Login / Logout</button></div>
+<div class="person-sub" style="margin-top:12px">Backup & cloud account controls</div>
+<div class="person-tools" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px"><button class="soft" id="backupSoon">Backup</button><button class="soft" id="restoreNow">Restore</button><button class="soft" id="cloudSyncNow" data-t="syncNow">Sync Now</button></div>
 </div></details>
 </div>
 <div class="person" style="display:block;margin-top:8px">
@@ -108,7 +106,7 @@
 <div style="margin-top:12px">
 <div class="person-sub">Mobile number verification</div>
 <div class="field"><label>Mobile Number (+91)</label><input id="registerPhone" type="tel" inputmode="numeric" maxlength="13" placeholder="10-digit mobile number"></div>
-<div class="person-tools" style="display:flex;flex-wrap:wrap;gap:8px"><button class="soft" id="sendPhoneOTP">Send OTP / Resend</button><input id="phoneOTP" inputmode="numeric" maxlength="6" placeholder="OTP (6 digits)" style="min-width:110px;flex:1"><button class="soft" id="verifyPhoneOTP">Verify OTP</button></div>
+<div class="person-tools" style="display:flex;flex-wrap:wrap;gap:8px"><button class="soft" id="sendPhoneOTP">Send OTP</button><button class="soft" id="resendPhoneOTP" onclick="document.getElementById('sendPhoneOTP').click()">Resend OTP</button><input id="phoneOTP" inputmode="numeric" maxlength="6" placeholder="OTP (6 digits)" style="min-width:110px;flex:1"><button class="soft" id="verifyPhoneOTP">Verify OTP</button></div>
 <div id="phoneRecaptcha"></div>
 <div class="person-sub" id="phoneVerifyStatus" style="margin-top:8px">Enter mobile number, send or resend OTP, then verify.</div>
 </div></details>
