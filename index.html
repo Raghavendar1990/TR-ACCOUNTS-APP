@@ -40,6 +40,23 @@
 /* Compact UI and non-scrolling Settings view */
 @media(max-width:760px){body{font-size:14px;line-height:1.38}.app{padding-left:12px;padding-right:12px;padding-bottom:70px}.top{gap:8px;margin-bottom:16px}.brand h1{font-size:18px}.brand small{font-size:11px}.logo{width:40px;height:40px}.welcome h2{font-size:20px}.welcome p{font-size:14px}.card{padding:11px;border-radius:15px}.person{padding:10px;border-radius:13px}.soft,.primary{padding:8px 10px;font-size:13px}.field input,.field select{padding:10px;font-size:14px}.nav{padding:3px 4px calc(3px + env(safe-area-inset-bottom))}.nav-inner button{padding:5px 2px;font-size:11px}.nav-inner .nicon{font-size:17px;margin-bottom:1px}}
 @media(max-width:760px){#settingsPage{overflow:hidden;max-height:calc(100dvh - 158px)}#settingsPage .welcome{margin-bottom:8px}#settingsPage .card{padding:10px}#settingsPage .person-list{gap:6px}#settingsPage .person{padding:9px}#settingsPage details{padding:8px 10px!important;margin:5px 0 0!important}#settingsPage .person-sub{font-size:11px}#settingsPage .field{margin:8px 0;gap:4px}#settingsPage .field label{font-size:12px}#settingsPage .person-tools{gap:4px}#settingsPage .soft{padding:7px 8px;font-size:12px}}
+
+/* Phone-only layout: keep the app sized like a mobile handset on wider screens too */
+@media(min-width:481px){
+  body{background:#050b14}
+  .app{width:100%;max-width:480px;margin:0 auto;padding-left:12px;padding-right:12px;padding-top:calc(18px + max(env(safe-area-inset-top,0px),12px));padding-bottom:76px;min-height:100dvh}
+  .nav{position:fixed!important;left:0;right:0;bottom:0;margin:0!important;background:color-mix(in srgb,var(--panel) 96%,transparent)!important;border-top:1px solid var(--line)!important;pointer-events:auto!important;padding:4px 6px calc(4px + env(safe-area-inset-bottom))!important}
+  .nav-inner{max-width:480px!important;width:100%;background:transparent!important;border:0!important;border-radius:0!important;padding:0!important;box-shadow:none!important}
+  .cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.card{padding:11px}
+  .quick{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.quick button{padding:12px 6px}
+  .bs-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.bs-two{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .app{max-width:none;width:100%}
+  .splash-inner{width:94%;max-width:430px;padding:0 4px}
+  .splash-logo-wrap{width:min(72vw,300px)}
+  .splash-logo{max-height:34vh}
+}
 </style>
 </head>
 <body><div id="trSplash" aria-label="TR Accounts Book loading"><div class="splash-inner"><div class="splash-logo-wrap"><div class="splash-loader-ring" aria-hidden="true"></div><img src="./TR_Accounts_Logo_Transparent-1.png" alt="TR Accounts Book logo" class="splash-logo"></div><h1>TR Accounts Book</h1><p>Personal Accounts • Business Accounts • Cloud Sync</p><div class="splash-loading" aria-live="polite">Loading<span class="splash-dots"><span>.</span><span>.</span><span>.</span></span></div></div></div>
