@@ -17,6 +17,7 @@ jobs:
           java-version: 21
       - run: mkdir -p web && cp index.html storage.js manifest.webmanifest sw.js cloud.js business-suite.js firebase-config.js TR_Accounts_Logo_Transparent-1.png web/ && cp -r icons web/icons
       - run: npm install
+      - run: npx esbuild cloud.js --bundle --format=esm --outfile=web/cloud.js
       - run: npx cap add android
       - run: npx cap sync android
       - name: Set Android app version
