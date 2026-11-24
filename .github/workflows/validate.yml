@@ -25,6 +25,19 @@ jobs:
         run: cp cloud.js /tmp/tr-accounts-cloud.mjs && node --check /tmp/tr-accounts-cloud.mjs
       - name: Validate Business Suite JavaScript syntax
         run: node --check business-suite.js
+      - name: Verify security and data-safety guardrails
+        run: |
+          python3 - <<'PY'
+          html = open('index.html', encoding='utf-8').read()
+          cloud = open('cloud.js', encoding='utf-8').read()
+          rules = open('firestore.rules', encoding='utf-8').read()
+          assert 'APP_PIN_ATTEMPTS_KEY' in html and 'attempts>=5' in html, 'PIN attempt limit/recovery visibility missing'
+          assert 'Create new 4–8 digit PIN' in html and 'Create a new recovery code' in html, 'Recovery must replace PIN and recovery code'
+          assert 'phoneClaimVerified' in cloud and 'Cloud Sync blocked' in cloud, 'Cloud sync must require Firebase phone claim'
+          assert 'sync-conflict-' in cloud and 'syncConflict:true' in cloud, 'Sync conflict preservation missing'
+          assert 'owner(uid) && phoneVerified()' in rules, 'Firestore owner sync must require verified phone'
+          print('Security guardrail assertions passed')
+          PY
       - name: Validate JSON files
         run: |
           python3 -m json.tool manifest.webmanifest >/dev/null
