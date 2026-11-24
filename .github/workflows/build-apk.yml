@@ -15,12 +15,12 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - run: mkdir -p web && cp index.html storage.js manifest.webmanifest sw.js cloud.js business-suite.js firebase-config.js web/ && cp -r icons web/icons
+      - run: mkdir -p web && cp index.html storage.js manifest.webmanifest sw.js cloud.js business-suite.js firebase-config.js TR_Accounts_Logo_Transparent-1.png web/ && cp -r icons web/icons
       - run: npm install
       - run: npx cap add android
       - run: npx cap sync android
       - name: Set Android app version
-        run: sed -i -E 's/versionCode [0-9]+/versionCode 12/; s/versionName "[^"]+"/versionName "1.1.1"/' android/app/build.gradle
+        run: sed -i -E 's/versionCode [0-9]+/versionCode 13/; s/versionName "[^"]+"/versionName "1.1.2"/' android/app/build.gradle
       - name: Build APK
         run: cd android && ./gradlew assembleDebug
       - name: Verify APK signature and package
@@ -31,9 +31,9 @@ jobs:
           "$APKSIGNER" verify --verbose "$APK"
           "$AAPT" dump badging "$APK" | grep -E "package:|sdkVersion:|targetSdkVersion:"
           mkdir -p verified
-          cp "$APK" verified/TR-Accounts-v1.1.1.apk
+          cp "$APK" verified/TR-Accounts-v1.1.2.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: TR-Accounts-v1.1.1-Verified-APK
+          name: TR-Accounts-v1.1.2-Verified-APK
           path: verified/TR-Accounts-v1.1.1.apk
           retention-days: 30
