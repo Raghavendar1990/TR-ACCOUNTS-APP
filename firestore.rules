@@ -12,7 +12,7 @@ service cloud.firestore {
 
     match /trAccountsUsers/{uid} {
       // Profile metadata may be read by its owner; ledger payload requires a verified Firebase phone claim.
-      allow read: if owner(uid) || approvedDevice(uid);
+      allow read: if (owner(uid) && phoneVerified()) || approvedDevice(uid);
       allow create: if owner(uid) && request.resource.data.keys().hasOnly(['profile', 'profileUpdatedAt']);
       allow delete: if owner(uid);
       allow update: if (owner(uid) && phoneVerified())
