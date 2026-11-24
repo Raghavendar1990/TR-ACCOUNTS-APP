@@ -20,7 +20,7 @@ jobs:
       - run: npx cap add android
       - run: npx cap sync android
       - name: Set Android app version
-        run: sed -i -E 's/versionCode [0-9]+/versionCode 17/; s/versionName "[^"]+"/versionName "1.1.6"/' android/app/build.gradle
+        run: sed -i -E 's/versionCode [0-9]+/versionCode 18/; s/versionName "[^"]+"/versionName "2.0"/' android/app/build.gradle
       - name: Build APK
         run: cd android && ./gradlew assembleDebug
       - name: Verify APK signature and package
@@ -31,9 +31,9 @@ jobs:
           "$APKSIGNER" verify --verbose "$APK"
           "$AAPT" dump badging "$APK" | grep -E "package:|sdkVersion:|targetSdkVersion:"
           mkdir -p verified
-          cp "$APK" verified/TR-Accounts-v1.1.6.apk
+          cp "$APK" verified/TR-Accounts-v2.0.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: TR-Accounts-v1.1.6-Verified-APK
+          name: TR-Accounts-v2.0-Verified-APK
           path: verified/TR-Accounts-v1.1.6.apk
           retention-days: 30
