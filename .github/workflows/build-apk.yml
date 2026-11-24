@@ -31,9 +31,9 @@ jobs:
           "$APKSIGNER" verify --verbose "$APK"
           "$AAPT" dump badging "$APK" | grep -E "package:|sdkVersion:|targetSdkVersion:"
           mkdir -p verified
-          cp "$APK" verified/TR-Accounts-v1.1.5.apk
+          cp "$APK" verified/TR-Accounts-v1.1.6.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: TR-Accounts-v1.1.5-Verified-APK
+          name: TR-Accounts-v1.1.6-Verified-APK
           path: verified/TR-Accounts-v1.1.5.apk
           retention-days: 30
