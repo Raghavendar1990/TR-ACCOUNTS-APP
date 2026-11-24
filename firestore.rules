@@ -11,14 +11,18 @@ service cloud.firestore {
     }
 
     match /trAccountsUsers/{uid} {
+      // Profile metadata may be read by its owner; ledger payload requires a verified Firebase phone claim.
       allow read: if owner(uid) || approvedDevice(uid);
-      allow create, delete: if owner(uid);
-      allow update: if owner(uid)
+      allow create: if owner(uid) && request.resource.data.keys().hasOnly(['profile', 'profileUpdatedAt']);
+      allow delete: if owner(uid);
+      allow update: if (owner(uid) && phoneVerified())
+        || (owner(uid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['profile', 'profileUpdatedAt']))
         || (approvedDevice(uid)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['data', 'updatedAt']));
 
       match /syncEntries/{entryId} {
-        allow read, write: if owner(uid) || approvedDevice(uid);
+        allow read, write: if (owner(uid) && phoneVerified()) || approvedDevice(uid);
       }
 
       match /deviceRequests/{requestId} {
