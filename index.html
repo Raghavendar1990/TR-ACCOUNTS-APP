@@ -200,7 +200,8 @@ document.getElementById("restoreFile").addEventListener("change",async e =>{cons
  window.currentStatementText="TR ACCOUNTS — BANK STATEMENT\nPerson: "+person+"\nPeriod: "+(from||"Beginning")+" to "+(to||"Present")+"\nGenerated: "+new Date().toLocaleString()+"\n\nOpening Balance: "+money(opening)+"\n\nDATE | DESCRIPTION | TYPE | AMOUNT | PAYMENT | RUNNING BALANCE\n"+(textRows.join("\n")||"(No transactions in selected period)")+"\n\nTotal Income: "+money(inc)+"\nTotal Expense: "+money(exp)+"\nClosing Balance: "+money(balance);
 }
 function transactionPersonName(x){const raw=x?.personName||x?.person||x?.personId||x?.person_id||"";if(!raw)return "Person not linked";const match=people.find(p=>String(p.id)===String(raw)||String(p.name)===String(raw));return match?.name||String(raw);}
-let selectedPersonHistory="";\nfunction renderHistory(){
+let selectedPersonHistory="";
+function renderHistory(){
  const q=(document.getElementById("historySearch")?.value||"").toLowerCase();
  const list=transactions.filter(x=>(!selectedPersonHistory||transactionPersonName(x)===selectedPersonHistory)&&(historyFilter==="all"||x.type===historyFilter)&&(!q||String(x.note+" "+transactionPersonName(x)).toLowerCase().includes(q))).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
  const el=document.getElementById("historyList");
