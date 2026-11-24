@@ -60,8 +60,11 @@ else{
   if(btn)btn.addEventListener("click",async()=>{
    if(currentUser){try{await signOut(auth);status("Signed out.");}catch(e){console.error(e);status("Sign out failed.");}return;}
    const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:"select_account"});
-   try{await signInWithPopup(auth,provider);}
-   catch(err){console.error("Google popup sign-in failed:",err);status("Google Login failed ("+(err.code||"unknown")+"). Please try again in Chrome or allow pop-ups.");}
+   try{
+    if(isNativeApp()) await nativeGoogleSignIn();
+    else await signInWithPopup(auth,provider);
+   }
+   catch(err){console.error("Google sign-in failed:",err);status("Google Login failed ("+(err.code||"unknown")+"). Please try again.");}
   });
   document.getElementById("cloudSyncNow")?.addEventListener("click",async()=>{currentUser=auth?.currentUser||currentUser;if(!currentUser){status("Google login session not detected. Tap Google Login again.");return;}if(syncing){status("Sync already running.");return;}syncing=true;try{await guardedUpload();}finally{syncing=false;}});
   window.addEventListener("tr-accounts-data-updated",()=>{if(!currentUser)return;clearTimeout(timer);timer=setTimeout(async()=>{if(syncing)return;syncing=true;try{await guardedUpload();}finally{syncing=false;}},1200);});
