@@ -61,10 +61,19 @@ else{
    if(currentUser){try{await signOut(auth);status("Signed out.");}catch(e){console.error(e);status("Sign out failed.");}return;}
    const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:"select_account"});
    try{
-    if(isNativeApp()) await nativeGoogleSignIn();
-    else await signInWithPopup(auth,provider);
+    if(isNativeApp()){
+      await nativeGoogleSignIn();
+      currentUser=auth.currentUser||currentUser;
+      if(!currentUser) throw new Error("Firebase Auth user session was not created after native Google sign-in.");
+      status("Google account connected. Starting cloud sync…");
+      await syncData();
+    }else{
+      const credential=await signInWithPopup(auth,provider);
+      currentUser=credential.user||auth.currentUser;
+      if(currentUser) await syncData();
+    }
    }
-   catch(err){console.error("Google sign-in failed:",err);status("Google Login failed ("+(err.code||"unknown")+"). Please try again.");}
+   catch(err){console.error("Google sign-in failed:",err);status("Google Login failed ("+(err.code||err.message||"unknown")+"). Please try again.");}
   });
   document.getElementById("cloudSyncNow")?.addEventListener("click",async()=>{currentUser=auth?.currentUser||currentUser;if(!currentUser){status("Google login session not detected. Tap Google Login again.");return;}if(syncing){status("Sync already running.");return;}syncing=true;try{await guardedUpload();}finally{syncing=false;}});
   window.addEventListener("tr-accounts-data-updated",()=>{if(!currentUser)return;clearTimeout(timer);timer=setTimeout(async()=>{if(syncing)return;syncing=true;try{await guardedUpload();}finally{syncing=false;}},1200);});
