@@ -2,5 +2,13 @@
   "appId": "com.raghavendar.traccountsledger",
   "appName": "TR Accounts",
   "webDir": "web",
-  "bundledWebRuntime": false
+  "bundledWebRuntime": false,
+  "plugins": {
+    "FirebaseAuthentication": {
+      "skipNativeAuth": true,
+      "providers": [
+        "google.com"
+      ]
+    }
+  }
 }
