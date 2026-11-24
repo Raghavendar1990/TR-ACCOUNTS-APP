@@ -23,10 +23,37 @@ function saveProfileLocal(p){localStorage.setItem(PROFILE_KEY,JSON.stringify(p))
 
 function updatePhoneStatus(msg){const el=document.getElementById("phoneVerifyStatus");if(el)el.textContent=msg;}
 function normalizePhone(){let p=(document.getElementById("registerPhone")?.value||"").trim().replace(/[\\s-]/g,"");if(/^\\d{10}$/.test(p))p="+91"+p;else if(/^91\\d{10}$/.test(p))p="+"+p;return /^\\+91\\d{10}$/.test(p)?p:null;}
-let phoneVerifier=null,phoneVerificationId=null;
+let phoneVerifier=null,phoneVerificationId=null,nativePhoneListenerHandles=[];
 function phoneClaimVerified(){return !!(auth?.currentUser?.phoneNumber);}
-async function sendFirebasePhoneOtp(){const phone=normalizePhone();if(!phone){updatePhoneStatus("Enter a valid 10-digit Indian mobile number.");return;}if(!auth?.currentUser){updatePhoneStatus("Sign in with Google first.");return;}try{if(!phoneVerifier){phoneVerifier=new RecaptchaVerifier(auth,"phoneRecaptcha",{});}const provider=new PhoneAuthProvider(auth);phoneVerificationId=await provider.verifyPhoneNumber(phone,phoneVerifier);updatePhoneStatus("Firebase OTP sent. Enter the SMS code to verify.");}catch(err){console.error(err);updatePhoneStatus("OTP send failed: "+(err.code||err.message));}}
-async function verifyFirebasePhoneOtp(){const code=(document.getElementById("phoneOTP")?.value||"").trim();if(!phoneVerificationId||!code){updatePhoneStatus("Send Firebase OTP first and enter the code.");return;}try{const credential=PhoneAuthProvider.credential(phoneVerificationId,code);await linkWithCredential(auth.currentUser,credential);currentUser=auth.currentUser;phoneVerificationId=null;updatePhoneStatus("Firebase phone verification successful. Cloud Sync enabled.");await syncData();}catch(err){console.error(err);updatePhoneStatus("OTP verification failed: "+(err.code||err.message));}}
+async function sendFirebasePhoneOtp(){const phone=normalizePhone();if(!phone){updatePhoneStatus("Enter a valid 10-digit Indian mobile number.");return;}if(!auth?.currentUser){updatePhoneStatus("Sign in with Google first.");return;}try{
+ if(isNativeApp()){
+  const {FirebaseAuthentication}=await import("@capacitor-firebase/authentication");
+  // Native plugin account must match the Google account UID used by the JS SDK.
+  const nativeUser=await FirebaseAuthentication.getCurrentUser();
+  if(!nativeUser?.user?.uid)throw new Error("Native Google session not found. Please sign out and sign in with Google again.");
+  nativePhoneListenerHandles.forEach(h=>h.remove?.());nativePhoneListenerHandles=[];
+  let codeSentResolve,codeSentReject;const codeSent=new Promise((resolve,reject)=>{codeSentResolve=resolve;codeSentReject=reject;});
+  nativePhoneListenerHandles.push(await FirebaseAuthentication.addListener("phoneCodeSent",event=>{phoneVerificationId=event.verificationId;codeSentResolve(event.verificationId);}));
+  nativePhoneListenerHandles.push(await FirebaseAuthentication.addListener("phoneVerificationFailed",event=>codeSentReject(new Error(event.message||event.code||"Native phone verification failed"))));
+  await FirebaseAuthentication.linkWithPhoneNumber({phoneNumber:phone});
+  phoneVerificationId=await Promise.race([codeSent,new Promise((_,reject)=>setTimeout(()=>reject(new Error("OTP request timed out. Try again.")),60000))]);
+  updatePhoneStatus("Firebase OTP sent. Enter the SMS code to verify.");
+ }else{
+  if(!phoneVerifier)phoneVerifier=new RecaptchaVerifier(auth,"phoneRecaptcha",{});
+  const provider=new PhoneAuthProvider(auth);phoneVerificationId=await provider.verifyPhoneNumber(phone,phoneVerifier);
+  updatePhoneStatus("Firebase OTP sent. Enter the SMS code to verify.");
+ }
+}catch(err){console.error(err);updatePhoneStatus("OTP send failed: "+(err.code||err.message));}}
+async function verifyFirebasePhoneOtp(){const code=(document.getElementById("phoneOTP")?.value||"").trim();if(!phoneVerificationId||!code){updatePhoneStatus("Send Firebase OTP first and enter the code.");return;}try{
+ if(isNativeApp()){
+  const {FirebaseAuthentication}=await import("@capacitor-firebase/authentication");
+  // Verify natively, then link the same SMS credential to the JS Firebase user for Firestore rules.
+  await FirebaseAuthentication.confirmVerificationCode({verificationId:phoneVerificationId,verificationCode:code});
+  const credential=PhoneAuthProvider.credential(phoneVerificationId,code);
+  await linkWithCredential(auth.currentUser,credential);
+ }else{const credential=PhoneAuthProvider.credential(phoneVerificationId,code);await linkWithCredential(auth.currentUser,credential);}
+ currentUser=auth.currentUser;phoneVerificationId=null;updatePhoneStatus("Firebase phone verification successful. Cloud Sync enabled.");await syncData();
+}catch(err){console.error(err);updatePhoneStatus("OTP verification failed: "+(err.code||err.message));}}
 if(document.getElementById("sendPhoneOTP"))document.getElementById("sendPhoneOTP").addEventListener("click",e=>{e.preventDefault();e.stopPropagation();sendFirebasePhoneOtp();});
 if(document.getElementById("verifyPhoneOTP"))document.getElementById("verifyPhoneOTP").addEventListener("click",verifyFirebasePhoneOtp);
 const SYNC_COL="syncEntries";
