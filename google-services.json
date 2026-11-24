@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "943088936513",
+    "project_id": "tr-accounts-6de03",
+    "storage_bucket": "tr-accounts-6de03.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:943088936513:android:9c5386bf825c8149f0c8c0",
+        "android_client_info": {
+          "package_name": "com.raghavendar.traccountsledger"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "943088936513-98fst72u7o563e9ath0ujl4r7gk0trin.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.raghavendar.traccountsledger",
+            "certificate_hash": "b48bbb4b0ca4b5fea95a90fef3902ad4a4bd002c"
+          }
+        },
+        {
+          "client_id": "943088936513-r58c8um282peleroiolpd61mo2gmj7ii.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYi21ViCe5y3uBZGk9Nr2X-FSQ7G2NCcg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "943088936513-r58c8um282peleroiolpd61mo2gmj7ii.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
