@@ -10,27 +10,28 @@ Mobile-first person-wise and business accounting app. This repository is an acti
 - Business ledgers and partner records
 - Business Suite: business dashboard, sales/invoices, purchases, inventory/stock alerts, customers, suppliers, expenses, employees/payroll entries, cash/bank/UPI records, reports, CSV export, print/PDF report, business profile settings, day closing, and customer/supplier ledger summaries
 - Telugu/English UI labels and dark/light themes
-- Local PIN hash and recovery-code flow
+- Local PIN hash and recovery-code flow; App Lock reveals recovery only after five failed PIN attempts, then requires replacement PIN and recovery code
 - Google sign-in, same-Gmail owner access across devices, and Firestore cloud sync\n- Required registered-mobile OTP verification on every device before Cloud Sync; Firebase Phone provider and phone-claim Firestore rules are required\n- Different-Gmail device access remains owner-approval based
 - PWA manifest, offline service-worker shell, Capacitor Android setup, and debug APK workflow
 
 ## Not yet implemented or verified
-- Per-device phone OTP and same-Gmail access, plus different-Gmail approval (implemented, testing pending)
+- Firebase Phone OTP and cloud sync are code-gated but require Firebase Phone provider/domain setup and live verification
+- Same-Gmail multi-device sync, conflict handling, and different-Gmail owner approval remain unverified
 - Automated daily/weekly backup scheduling
 - Full test coverage and real-device validation
 - Final integration of the owner's original logo/photo
-- Latest GitHub Actions validation, Pages deployment, and APK build status are not confirmed
+- Real-device tests, production Firebase verification, and Pages deployment are pending
 
 ## Data and safety
 Local app data is saved in browser/device storage. Proof attachments are stored in IndexedDB. JSON backup export includes proofs when the proof records can be read; restore attempts to re-import them. Keep backups in a separate safe location and do not treat this prototype as the only financial record.
 
-Cloud sync is implemented in the client module but is not considered production-ready until Firebase configuration, authentication domains, Firestore rules, conflict behavior, and multi-device testing are verified.
+Cloud sync now blocks ledger synchronization until the signed-in Google account has a Firebase phone-number claim. Self-SMS is not authentication. Cloud sync is still not production-ready until Firebase Phone sign-in is enabled, authorized domains and Firestore rules are published, and multi-device conflict/restore tests are completed.
 
 ## Firebase
 See [Firebase setup instructions](FIREBASE_SETUP.md). Enable Firebase Phone sign-in, then publish the updated `firestore.rules`. Same Gmail uses the same owner UID without approval, but every device must complete mobile OTP verification. Different Gmail remains owner-approval based. Test OTP, sync, and rules on two devices before relying on this feature.
 
 ## Debug APK
-The GitHub Actions workflow `.github/workflows/build-apk.yml` builds a debug APK and uploads it as the `TR-Accounts-debug-APK` artifact when it succeeds. The latest build has not been verified.
+The GitHub Actions workflow builds v2.0.5 and verifies APK signature/package metadata. Stable signing secrets are optional; without them, the artifact uses Android debug signing and must not be treated as a production release.
 
 ## Validation
-Validation workflow checks should be reviewed in GitHub Actions after each relevant commit.
+Validation and build/deploy workflows must be reviewed in GitHub Actions after each relevant commit. No real-device or live Firebase verification is claimed.
