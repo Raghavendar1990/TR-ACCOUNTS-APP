@@ -36,6 +36,7 @@ jobs:
           assert 'phoneClaimVerified' in cloud and 'Cloud Sync blocked' in cloud, 'Cloud sync must require Firebase phone claim'
           assert 'sync-conflict-' in cloud and 'syncConflict:true' in cloud, 'Sync conflict preservation missing'
           assert 'owner(uid) && phoneVerified()' in rules, 'Firestore owner sync must require verified phone'
+          assert 'allow read: if (owner(uid) && phoneVerified()) || approvedDevice(uid)' in rules, 'Root document reads must also require verified phone'
           print('Security guardrail assertions passed')
           PY
       - name: Validate JSON files
