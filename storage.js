@@ -12,28 +12,27 @@
   };
 
   function load() {
-    try {
-      let raw = localStorage.getItem(KEY);
-      if (!raw) raw = localStorage.getItem(BACKUP_KEY);
-      if (!raw) return { ...DEFAULTS };
-      const parsed = JSON.parse(raw);
-      return {
-        people: Array.isArray(parsed.people) ? parsed.people : [],
-        transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
-        recycleBin: Array.isArray(parsed.recycleBin) ? parsed.recycleBin : [],
-        businesses: Array.isArray(parsed.businesses) ? parsed.businesses : [],
-        businessTransactions: Array.isArray(parsed.businessTransactions) ? parsed.businessTransactions : [],
-        partners: Array.isArray(parsed.partners) ? parsed.partners : [],
-        partnerRecords: Array.isArray(parsed.partnerRecords) ? parsed.partnerRecords : [],
-        pinHash: typeof parsed.pinHash === "string" ? parsed.pinHash : "",
-        recoveryHash: typeof parsed.recoveryHash === "string" ? parsed.recoveryHash : "",
-        language: parsed.language === "te" ? "te" : "en",
-        theme: parsed.theme === "light" ? "light" : "dark"
-      };
-    } catch (error) {
-      console.warn("TR Accounts: local data could not be read", error);
-      return { ...DEFAULTS };
-    }
+    const parseStore = raw => {
+      if (!raw) return null;
+      try { const parsed=JSON.parse(raw); return parsed && typeof parsed === "object" ? parsed : null; }
+      catch { return null; }
+    };
+    let parsed=parseStore(localStorage.getItem(KEY));
+    if(!parsed) parsed=parseStore(localStorage.getItem(BACKUP_KEY));
+    if(!parsed) return { ...DEFAULTS };
+    return {
+      people: Array.isArray(parsed.people) ? parsed.people : [],
+      transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
+      recycleBin: Array.isArray(parsed.recycleBin) ? parsed.recycleBin : [],
+      businesses: Array.isArray(parsed.businesses) ? parsed.businesses : [],
+      businessTransactions: Array.isArray(parsed.businessTransactions) ? parsed.businessTransactions : [],
+      partners: Array.isArray(parsed.partners) ? parsed.partners : [],
+      partnerRecords: Array.isArray(parsed.partnerRecords) ? parsed.partnerRecords : [],
+      pinHash: typeof parsed.pinHash === "string" ? parsed.pinHash : "",
+      recoveryHash: typeof parsed.recoveryHash === "string" ? parsed.recoveryHash : "",
+      language: parsed.language === "te" ? "te" : "en",
+      theme: parsed.theme === "light" ? "light" : "dark"
+    };
   }
 
   function save(data) {
