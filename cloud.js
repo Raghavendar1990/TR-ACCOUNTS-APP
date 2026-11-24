@@ -1,6 +1,6 @@
 /* TR Accounts Cloud: Google sign-in, automatic sync, and conflict-safe uploads. Self-SMS is optional. */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, reauthenticateWithPopup, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, reauthenticateWithPopup, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp, runTransaction, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
@@ -54,14 +54,12 @@ else{
  try{
   const app=initializeApp(firebaseConfig);auth=getAuth(app);await setPersistence(auth,browserLocalPersistence);db=getFirestore(app);
   window.TRAccountsReverifyGoogle=async()=>{const user=auth?.currentUser;if(!user)return false;const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:"select_account"});const result=await reauthenticateWithPopup(user,provider);return !!result?.user;};
-  // Process a pending mobile redirect result as well as popup sign-in.
-  getRedirectResult(auth).catch(e=>{if(e&&e.code!=="auth/no-auth-event")console.warn("Google redirect result:",e);});
   onAuthStateChanged(auth,async user=>{currentUser=user||null;authReadyResolve(user||null);lastCloudJSON=null;conflictPaused=false;status(user?"Google account connected.":"Google Login");if(!user){fillProfile(loadProfileLocal());return;}try{const pRef=doc(db,"trAccountsUsers",user.uid),pSnap=await getDoc(pRef),cloudProfile=pSnap.exists()?(pSnap.data().profile||{}):{},localProfile=loadProfileLocal();fillProfile({email:user.email||"",name:cloudProfile.name||localProfile.name||user.displayName||"",phone:cloudProfile.phone||localProfile.phone||"",dob:cloudProfile.dob||localProfile.dob||"",gender:cloudProfile.gender||localProfile.gender||""});}catch(e){fillProfile({email:user.email||"",...loadProfileLocal()});}await syncData();});
   if(btn)btn.addEventListener("click",async()=>{
    if(currentUser){try{await signOut(auth);status("Signed out.");}catch(e){console.error(e);status("Sign out failed.");}return;}
    const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:"select_account"});
    try{await signInWithPopup(auth,provider);}
-   catch(err){console.warn("Popup sign-in fallback:",err);try{await signInWithRedirect(auth,provider);}catch(e){console.error(e);status("Google sign-in failed: "+(e.code||e.message));}}
+   catch(err){console.error("Google popup sign-in failed:",err);status("Google Login failed ("+(err.code||"unknown")+"). Please try again in Chrome or allow pop-ups.");}
   });
   document.getElementById("cloudSyncNow")?.addEventListener("click",async()=>{currentUser=auth?.currentUser||currentUser;if(!currentUser){status("Google login session not detected. Tap Google Login again.");return;}if(syncing){status("Sync already running.");return;}syncing=true;try{await guardedUpload();}finally{syncing=false;}});
   window.addEventListener("tr-accounts-data-updated",()=>{if(!currentUser)return;clearTimeout(timer);timer=setTimeout(async()=>{if(syncing)return;syncing=true;try{await guardedUpload();}finally{syncing=false;}},1200);});
