@@ -4,6 +4,7 @@
 (() => {
   "use strict";
   const KEY = "tr_accounts_data_v1";
+  const BACKUP_KEY = "tr_accounts_data_backup_v1";
   const DEFAULTS = {
     people: [], transactions: [], recycleBin: [], businesses: [],
     businessTransactions: [], partners: [], partnerRecords: [],
@@ -12,7 +13,8 @@
 
   function load() {
     try {
-      const raw = localStorage.getItem(KEY);
+      let raw = localStorage.getItem(KEY);
+      if (!raw) raw = localStorage.getItem(BACKUP_KEY);
       if (!raw) return { ...DEFAULTS };
       const parsed = JSON.parse(raw);
       return {
@@ -36,7 +38,7 @@
 
   function save(data) {
     try {
-      localStorage.setItem(KEY, JSON.stringify({
+      const serialized = JSON.stringify({
         people: Array.isArray(data.people) ? data.people : [],
         transactions: Array.isArray(data.transactions) ? data.transactions : [],
         recycleBin: Array.isArray(data.recycleBin) ? data.recycleBin : [],
@@ -49,7 +51,9 @@
         language: data.language === "te" ? "te" : "en",
         theme: data.theme === "light" ? "light" : "dark",
         updatedAt: new Date().toISOString()
-      }));
+      });
+      localStorage.setItem(KEY, serialized);
+      localStorage.setItem(BACKUP_KEY, serialized);
       return true;
     } catch (error) {
       console.warn("TR Accounts: local save failed", error);
