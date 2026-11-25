@@ -24,7 +24,7 @@ function profileStatus(s){const el=document.getElementById("profileStatus");if(e
 function saveProfileLocal(p){localStorage.setItem(PROFILE_KEY,JSON.stringify(p));}
 
 function selfSmsVerifiedForCurrentPhone(){
- const phone=(document.getElementById("profilePhone")?.value||"").replace(/\\D/g,"").slice(-10);
+ const phone=(document.getElementById("profilePhone")?.value||"").replace(/\D/g,"").slice(-10);
  if(!/^[6-9]\\d{9}$/.test(phone))return false;
  try{const v=JSON.parse(localStorage.getItem("tr_accounts_self_sms_verified_v1")||"null");return !!v&&v.phone===phone&&v.method==="self-sms";}catch{return false;}
 }
