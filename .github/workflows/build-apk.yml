@@ -126,6 +126,28 @@ jobs:
           colors=root/'values';colors.mkdir(parents=True,exist_ok=True)
           colors.joinpath('ic_launcher_background.xml').write_text('<resources><color name="ic_launcher_background">#FFFFFF</color></resources>')
           PY
+      - name: Force Android launcher icon to the TR logo
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          manifest=Path('android/app/src/main/AndroidManifest.xml')
+          text=manifest.read_text()
+          # Explicitly point both launcher icon variants at freshly generated resources.
+          text=re.sub(r'<application\\b', '<application android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round"', text, count=1)
+          manifest.write_text(text)
+          res=Path('android/app/src/main/res')
+          # Put the adaptive foreground in drawable-nodpi so resource lookup is density-independent.
+          source=res/'mipmap-xxxhdpi'/'ic_launcher_foreground.png'
+          target=res/'drawable-nodpi'; target.mkdir(parents=True,exist_ok=True)
+          if source.exists():
+            import shutil
+            shutil.copy2(source,target/'ic_launcher_foreground.png')
+          for name in ('ic_launcher.xml','ic_launcher_round.xml'):
+            p=res/'mipmap-anydpi-v26'/name
+            if p.exists():
+              p.write_text('<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@color/ic_launcher_background"/><foreground android:drawable="@drawable/ic_launcher_foreground"/></adaptive-icon>')
+          PY
       - name: Configure optional stable Android signing
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
