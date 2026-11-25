@@ -10,6 +10,7 @@ let auth,db,currentUser=null,syncing=false,timer,lastCloudJSON=null,conflictPaus
 async function waitForAuthUser(timeout=5000){if(auth?.currentUser)return auth.currentUser;await Promise.race([authReady,new Promise(resolve=>setTimeout(resolve,timeout))]);return auth?.currentUser||currentUser||null;}
 function status(msg){if(notice)notice.textContent=msg;if(btn)btn.textContent=currentUser?"Gmail Logout":"Gmail Login";}
 function jsonData(d){return JSON.stringify(d||{});}
+window.TRAccountsLogout=async()=>{if(!auth)throw new Error("Authentication is not initialized.");if(auth.currentUser)await signOut(auth);currentUser=null;status("Logged out. Local account data is kept on this device.");return true;};
 
 // Profile fields: Gmail is read-only from Google Auth; other fields are editable.
 const PROFILE_KEY="tr_accounts_profile_v1";
