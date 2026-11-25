@@ -33,10 +33,10 @@ jobs:
           rules = open('firestore.rules', encoding='utf-8').read()
           assert 'APP_PIN_ATTEMPTS_KEY' in html and 'getAppPinAttempts()>=5' in html, 'PIN attempt limit/recovery visibility missing'
           assert 'Create new 4–8 digit PIN' in html and 'Create a new recovery code' in html, 'Recovery must replace PIN and recovery code'
-          assert 'phoneClaimVerified' in cloud and 'Cloud Sync blocked' in cloud, 'Cloud sync must require Firebase phone claim'
+          assert 'selfSmsVerifiedForCurrentPhone' in cloud and 'Cloud Sync blocked' in cloud, 'Cloud sync must require same-number Self-SMS check'
           assert 'sync-conflict-' in cloud and 'syncConflict:true' in cloud, 'Sync conflict preservation missing'
-          assert 'owner(uid) && phoneVerified()' in rules, 'Firestore owner sync must require verified phone'
-          assert 'allow read: if (owner(uid) && phoneVerified()) || approvedDevice(uid)' in rules, 'Root document reads must also require verified phone'
+          assert 'allow read: if owner(uid) || approvedDevice(uid)' in rules, 'Firestore owner sync must require signed-in owner UID'
+          assert 'allow read, write: if owner(uid) || approvedDevice(uid)' in rules, 'Sync entry access must be owner or approved device'
           print('Security guardrail assertions passed')
           PY
       - name: Validate JSON files
