@@ -106,6 +106,10 @@ jobs:
           from PIL import Image
           from pathlib import Path
           root=Path('android/app/src/main/res')
+          # Remove every legacy/default launcher icon resource before recreating from TR logo.
+          for old in root.rglob('ic_launcher*'):
+           if old.is_file():
+            old.unlink()
           im=Image.open('trlogo-1024(1).png').convert('RGBA')
           # Pad logo for Android adaptive-icon safe area and create launcher assets.
           def padded_icon(size):
