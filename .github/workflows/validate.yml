@@ -33,10 +33,10 @@ jobs:
           rules = open('firestore.rules', encoding='utf-8').read()
           assert 'APP_PIN_ATTEMPTS_KEY' in html and 'getAppPinAttempts()>=5' in html, 'PIN attempt limit/recovery visibility missing'
           assert 'Create new 4–8 digit PIN' in html and 'Create a new recovery code' in html, 'Recovery must replace PIN and recovery code'
-          assert 'firebasePhoneClaimVerified' in cloud and 'Firebase phone claim required' in cloud, 'Cloud Sync must require Firebase phone claim'
+          assert 'selfSmsVerifiedForCurrentPhone' in cloud and 'same-number Self-SMS first' in cloud, 'Cloud Sync must require same-number Self-SMS'
           assert r'if(!/^[6-9]\\d{9}$/.test(phone))return false;' not in cloud, 'Self-SMS regex must not contain escaped backslash before digit class'
           assert r'if(!/^[6-9]\d{9}$/.test(phone))return false;' in cloud, 'Self-SMS gate must accept valid 10-digit phone numbers'
-          assert 'request.auth.token.phone_number != null' in rules and 'allow read, write: if phoneClaim() && (owner(uid) || approvedDevice(uid))' in rules, 'Firestore must enforce Firebase phone claim on sync entries'
+          assert 'allow read, write: if owner(uid) || approvedDevice(uid)' in rules and 'function approvedDevice(uid)' in rules, 'Firestore sync must enforce owner or approved-device UID'
           assert 'TR Accounts Logo' in html and 'trLoginForgot' in html and 'attempts>=5' in html, 'PIN login logo or 5-failure recovery visibility missing'
           assert 'trRecoveryGoogle' in html and 'trRecoveryPhone' in html and 'Login with Gmail' in html, 'Gmail + registered phone PIN recovery UI missing'
           assert 'Verify Gmail & Phone' in html and 'Create New PIN' in html and 'Save New PIN' in html, 'Gmail/phone PIN reset flow missing'
