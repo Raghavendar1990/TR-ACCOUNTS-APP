@@ -160,7 +160,7 @@ jobs:
               p.write_text(s)
           PY
       - name: Set Android app version
-        run: sed -i -E 's/versionCode [0-9]+/versionCode 27/; s/versionName "[^"]+"/versionName "2.0.9"/' android/app/build.gradle
+        run: sed -i -E 's/versionCode [0-9]+/versionCode 28/; s/versionName "[^"]+"/versionName "2.1.0"/' android/app/build.gradle
       - name: Build APK
         env:
           ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/android/app/keystore/tr-accounts-release.jks
