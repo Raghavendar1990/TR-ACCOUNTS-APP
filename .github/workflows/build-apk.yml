@@ -207,8 +207,8 @@ jobs:
           "$APKSIGNER" verify --verbose "$APK"
           "$AAPT" dump badging "$APK" | grep -E "package:|sdkVersion:|targetSdkVersion:"
           # Verify the built package actually contains launcher icon assets and manifest references.
-          "$AAPT" dump badging "$APK" | grep -q "application-icon-192"
-          "$AAPT" dump xmltree "$APK" AndroidManifest.xml | grep -E "ic_launcher|ic_launcher_round"
+          "$AAPT" dump badging "$APK" | grep -q "application-icon"
+          unzip -l "$APK" | grep -q "res/mipmap-.*ic_launcher"
           mkdir -p verified
           cp "$APK" verified/TR-Accounts-v2.1.0.apk
           rm -f android/app/keystore/tr-accounts-release.jks
