@@ -91,11 +91,26 @@ jobs:
           python3 - <<'PY'
           from PIL import Image
           from pathlib import Path
+          root=Path('android/app/src/main/res')
           im=Image.open('trlogo-1024(1).png').convert('RGBA')
+          # Pad logo for Android adaptive-icon safe area and create launcher assets.
+          def padded_icon(size):
+           canvas=Image.new('RGBA',(size,size),(0,0,0,0))
+           logo=im.resize((int(size*0.72),int(size*0.72)),Image.Resampling.LANCZOS)
+           canvas.alpha_composite(logo,((size-logo.width)//2,(size-logo.height)//2))
+           return canvas
           for d,s in [('mipmap-mdpi',48),('mipmap-hdpi',72),('mipmap-xhdpi',96),('mipmap-xxhdpi',144),('mipmap-xxxhdpi',192)]:
-           p=Path('android/app/src/main/res')/d;p.mkdir(parents=True,exist_ok=True)
-           im.resize((s,s),Image.Resampling.LANCZOS).save(p/'ic_launcher.png')
-           im.resize((s,s),Image.Resampling.LANCZOS).save(p/'ic_launcher_round.png')
+           p=root/d;p.mkdir(parents=True,exist_ok=True)
+           icon=padded_icon(s)
+           icon.save(p/'ic_launcher.png')
+           icon.save(p/'ic_launcher_round.png')
+          fg=root/'mipmap-xxxhdpi'; fg.mkdir(parents=True,exist_ok=True)
+          padded_icon(192).save(fg/'ic_launcher_foreground.png')
+          adaptive=root/'mipmap-anydpi-v26';adaptive.mkdir(parents=True,exist_ok=True)
+          adaptive.joinpath('ic_launcher.xml').write_text('<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@color/ic_launcher_background"/><foreground android:drawable="@mipmap/ic_launcher_foreground"/></adaptive-icon>')
+          adaptive.joinpath('ic_launcher_round.xml').write_text('<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@color/ic_launcher_background"/><foreground android:drawable="@mipmap/ic_launcher_foreground"/></adaptive-icon>')
+          colors=root/'values';colors.mkdir(parents=True,exist_ok=True)
+          colors.joinpath('ic_launcher_background.xml').write_text('<resources><color name="ic_launcher_background">#FFFFFF</color></resources>')
           PY
       - name: Configure optional stable Android signing
         env:
