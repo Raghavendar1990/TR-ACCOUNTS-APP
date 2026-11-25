@@ -160,7 +160,7 @@ jobs:
               p.write_text(s)
           PY
       - name: Set Android app version
-        run: sed -i -E 's/versionCode [0-9]+/versionCode 26/; s/versionName "[^"]+"/versionName "2.0.8"/' android/app/build.gradle
+        run: sed -i -E 's/versionCode [0-9]+/versionCode 27/; s/versionName "[^"]+"/versionName "2.0.9"/' android/app/build.gradle
       - name: Build APK
         env:
           ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/android/app/keystore/tr-accounts-release.jks
@@ -176,10 +176,10 @@ jobs:
           "$APKSIGNER" verify --verbose "$APK"
           "$AAPT" dump badging "$APK" | grep -E "package:|sdkVersion:|targetSdkVersion:"
           mkdir -p verified
-          cp "$APK" verified/TR-Accounts-v2.0.8.apk
+          cp "$APK" verified/TR-Accounts-v2.0.9.apk
           rm -f android/app/keystore/tr-accounts-release.jks
       - uses: actions/upload-artifact@v5
         with:
-          name: TR-Accounts-v2.0.8-SIM-SMS-OTP
+          name: TR-Accounts-v2.0.9-SECURE-BACKUP
           path: verified/TR-Accounts-v2.0.8.apk
           retention-days: 30
