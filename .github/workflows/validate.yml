@@ -34,6 +34,8 @@ jobs:
           assert 'APP_PIN_ATTEMPTS_KEY' in html and 'getAppPinAttempts()>=5' in html, 'PIN attempt limit/recovery visibility missing'
           assert 'Create new 4–8 digit PIN' in html and 'Create a new recovery code' in html, 'Recovery must replace PIN and recovery code'
           assert 'selfSmsVerifiedForCurrentPhone' in cloud and 'Cloud Sync blocked' in cloud, 'Cloud sync must require same-number Self-SMS check'
+          assert r'if(!/^[6-9]\\d{9}$/.test(phone))return false;' not in cloud, 'Self-SMS regex must not contain escaped backslash before digit class'
+          assert r'if(!/^[6-9]\d{9}$/.test(phone))return false;' in cloud, 'Self-SMS gate must accept valid 10-digit phone numbers'
           assert 'PhoneAuthProvider' not in cloud and 'phoneClaimVerified' not in cloud, 'Firebase SMS OTP auth must be removed'
           assert 'Send the pre-filled SMS to the same number' in cloud, 'Self-SMS must use the same entered number'
           assert 'Self-SMS is manual' in html, 'UI must disclose manual Self-SMS limitation'
