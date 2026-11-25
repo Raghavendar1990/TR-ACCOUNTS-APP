@@ -28,13 +28,13 @@ jobs:
           import re
           root=Path('android/app/src/main')
           main=next(root.rglob('MainActivity.java'))
-          pkg=re.search(r'package\\s+([\\w.]+);',main.read_text()).group(1)
+          pkg=re.search(r'package\s+([\w.]+);',main.read_text()).group(1)
           plugin=root/'java'/Path(*pkg.split('.'))/'TRSmsPlugin.java'
           plugin.parent.mkdir(parents=True,exist_ok=True)
           plugin.write_text("""package %s;
           import android.Manifest; import android.content.*; import android.os.Build; import android.telephony.*; import android.content.pm.PackageManager; import android.app.PendingIntent; import android.util.Log;
           import com.getcapacitor.*; import com.getcapacitor.annotation.*; import java.util.*;
-          @CapacitorPlugin(name="TRSms", permissions={@Permission(alias="sms", strings={Manifest.permission.SEND_SMS,Manifest.permission.RECEIVE_SMS})})
+          @CapacitorPlugin(name="TRSms", permissions={@Permission(alias="sms", strings={Manifest.permission.SEND_SMS,Manifest.permission.RECEIVE_SMS,Manifest.permission.READ_PHONE_STATE})})
           public class TRSmsPlugin extends Plugin {
             private BroadcastReceiver receiver;
             @Override public void load(){ receiver=new BroadcastReceiver(){ public void onReceive(Context c,Intent i){ if("android.provider.Telephony.SMS_RECEIVED".equals(i.getAction())){ for(SmsMessage m:Telephony.Sms.Intents.getMessagesFromIntent(i)){ if(m!=null) notifyListeners("smsReceived",new JSObject().put("body",m.getMessageBody()).put("sender",m.getOriginatingAddress())); } } } }; IntentFilter f=new IntentFilter("android.provider.Telephony.SMS_RECEIVED"); if(Build.VERSION.SDK_INT>=33)getContext().registerReceiver(receiver,f,Context.RECEIVER_EXPORTED);else getContext().registerReceiver(receiver,f); }
@@ -51,7 +51,7 @@ jobs:
             main.write_text(text)
           manifest=root/'AndroidManifest.xml'; m=manifest.read_text()
           m=m.replace('<manifest ', '<manifest\\n    xmlns:tools="http://schemas.android.com/tools" ',1) if 'xmlns:tools' not in m else m
-          m=m.replace('<application', '<uses-permission android:name="android.permission.SEND_SMS" />\\n    <uses-permission android:name="android.permission.RECEIVE_SMS" />\\n    <application',1)
+          m=m.replace('<application', '<uses-permission android:name="android.permission.SEND_SMS" />\\n    <uses-permission android:name="android.permission.RECEIVE_SMS" />\\n    <uses-permission android:name="android.permission.READ_PHONE_STATE" />\\n    <application',1)
           manifest.write_text(m)
           PY
           python3 - <<'PY'
