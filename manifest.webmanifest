@@ -1,0 +1,31 @@
+{
+  "name": "TR Accounts",
+  "short_name": "TR Accounts",
+  "description": "Personal and business accounting with person-wise ledgers, income, expenses, statements, backup, and Telugu-English support.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#050b14",
+  "theme_color": "#07111f",
+  "lang": "en",
+  "categories": [
+    "finance",
+    "business",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
