@@ -28,7 +28,7 @@ jobs:
           import re
           root=Path('android/app/src/main')
           gradle=Path('android/app/build.gradle').read_text()
-          namespace=re.search(r'namespace\\s+[\'"]([\\w.]+)[\'"]',gradle).group(1)
+          namespace=re.search(r'namespace\s+[\'\"]([\w.]+)[\'\"]',gradle).group(1)
           main=next(root.rglob('MainActivity.*'))
           pkg=namespace
           plugin=root/'java'/Path(*pkg.split('.'))/'TRSmsPlugin.java'
