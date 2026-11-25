@@ -49,9 +49,9 @@ jobs:
           text=main.read_text()
           if 'TRSmsPlugin' not in text:
             if main.suffix=='.java':
-              text=text.replace('public class MainActivity extends BridgeActivity {', 'public class MainActivity extends BridgeActivity {\\n    @Override public void onCreate(android.os.Bundle savedInstanceState) {\\n        registerPlugin(TRSmsPlugin.class);\\n        super.onCreate(savedInstanceState);\\n    }')
+              text=text.replace('public class MainActivity extends BridgeActivity {', 'public class MainActivity extends BridgeActivity {\n    @Override public void onCreate(android.os.Bundle savedInstanceState) {\n        registerPlugin(TRSmsPlugin.class);\n        super.onCreate(savedInstanceState);\n    }')
             else:
-              text=text.replace('class MainActivity : BridgeActivity() {', 'class MainActivity : BridgeActivity() {\\n    override fun onCreate(savedInstanceState: android.os.Bundle?) {\\n        registerPlugin(TRSmsPlugin::class.java)\\n        super.onCreate(savedInstanceState)\\n    }')
+              text=text.replace('class MainActivity : BridgeActivity() {', 'class MainActivity : BridgeActivity() {\n    override fun onCreate(savedInstanceState: android.os.Bundle?) {\n        registerPlugin(TRSmsPlugin::class.java)\n        super.onCreate(savedInstanceState)\n    }')
             main.write_text(text)
           manifest=root/'AndroidManifest.xml'; m=manifest.read_text()
           m=m.replace('<manifest ', '<manifest\n    xmlns:tools="http://schemas.android.com/tools" ',1) if 'xmlns:tools' not in m else m
