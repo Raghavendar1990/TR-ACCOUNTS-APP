@@ -38,6 +38,9 @@ jobs:
           assert 'TRSecureStorage' in storage and 'TRSecurePlugin' in open('.github/workflows/build-apk.yml', encoding='utf-8').read() and 'AndroidKeyStore' in open('.github/workflows/build-apk.yml', encoding='utf-8').read(), 'Native Android Keystore integration missing'
           assert 'chooseBackupFolder' in storage and 'autoBackup' in storage, 'Automatic encrypted backup folder support missing'
           assert '@capacitor/filesystem' in open('package.json', encoding='utf-8').read() and '.TRAccounts/Backup' in storage, 'Android Documents backup folder integration missing'
+          build_workflow = open('.github/workflows/build-apk.yml', encoding='utf-8').read()
+          assert 'retention-days: 30' not in build_workflow and 'retention-days:' not in build_workflow, 'APK Actions artifact must not have a hard-coded short retention'
+          assert 'softprops/action-gh-release@v2' in build_workflow and 'files: verified/TR-Accounts-v2.1.0.apk' in build_workflow, 'APK must also be published as a GitHub Release asset for non-expiring download availability'
           assert 'TRAccountsCloudBackupEncrypt' in cloud and 'TR-CLOUD-ENC-1' in cloud, 'Gmail-authenticated cloud backup encryption/recovery missing'
           assert 'encryptCloudItem' in cloud and 'decryptCloudItem' in cloud and 'keyRecovery' in cloud, 'Encrypted Firestore sync/key escrow missing'
           assert 'TR-CLOUD-ENC-1' in html and 'TR-LOCAL-ENC-1' in html, 'Encrypted backup restore formats missing'
