@@ -2,7 +2,13 @@
 
 Mobile-first person-wise and business accounting app. This repository is an active prototype; features still require browser/device and deployment validation.
 
-## Security and backups\n- Automatic AES-256-GCM encryption for local account data and proof attachments; Android APK uses a non-exportable Android Keystore key, while web/PWA uses a non-exportable WebCrypto key in IndexedDB. Legacy local data and proof files are migrated in place.\n- Cloud sync entries are AES-GCM encrypted before Firestore writes; key recovery uses Gmail-authenticated Firebase key escrow (not end-to-end encryption).\n- Automatic dated encrypted backups in `Documents/.TRAccounts/Backup` on Android; browser builds use a folder picker when available.\n- Gmail-authenticated encrypted backups can be restored on a new device after publishing the updated Firestore rules. Local-only encrypted backups require the original device key.\n\n## Features
+## Security and backups
+- Automatic AES-256-GCM encryption for local account data and proof attachments; Android APK uses a non-exportable Android Keystore key, while web/PWA uses a non-exportable WebCrypto key in IndexedDB. Legacy local data and proof files are migrated in place.
+- Cloud sync entries are AES-GCM encrypted before Firestore writes; key recovery uses Gmail-authenticated Firebase key escrow (not end-to-end encryption).
+- Automatic dated encrypted backups in `Documents/.TRAccounts/Backup` on Android; browser builds use a folder picker when available.
+- Gmail-authenticated encrypted backups can be restored on a new device after publishing the updated Firestore rules. Local-only encrypted backups require the original device key.
+
+## Features
 - Dashboard totals, person-wise ledgers, transaction add/edit, history filters, recycle-bin restore/delete
 - Person-wise statements with date filtering, opening balance, running balance, print/PDF, and WhatsApp sharing
 - Local JSON backup and restore; proof attachments and IndexedDB storage
