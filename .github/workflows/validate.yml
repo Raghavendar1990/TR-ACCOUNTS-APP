@@ -41,6 +41,8 @@ jobs:
           build_workflow = open('.github/workflows/build-apk.yml', encoding='utf-8').read()
           assert 'retention-days: 30' not in build_workflow and 'retention-days:' not in build_workflow, 'APK Actions artifact must not have a hard-coded short retention'
           assert 'softprops/action-gh-release@v2' in build_workflow and 'files: verified/TR-Accounts-v2.1.0.apk' in build_workflow, 'APK must also be published as a GitHub Release asset for non-expiring download availability'
+          assert 'Force Android launcher icon to the TR logo' in build_workflow and 'android:icon="@mipmap/ic_launcher"' in build_workflow and 'android:roundIcon="@mipmap/ic_launcher_round"' in build_workflow, 'Android launcher must explicitly use generated TR logo icon resources'
+          assert '@drawable/ic_launcher_foreground' in build_workflow, 'Adaptive launcher icon must reference density-independent generated TR logo foreground'
           assert 'TRAccountsCloudBackupEncrypt' in cloud and 'TR-CLOUD-ENC-1' in cloud, 'Gmail-authenticated cloud backup encryption/recovery missing'
           assert 'encryptCloudItem' in cloud and 'decryptCloudItem' in cloud and 'keyRecovery' in cloud, 'Encrypted Firestore sync/key escrow missing'
           assert 'TR-CLOUD-ENC-1' in html and 'TR-LOCAL-ENC-1' in html, 'Encrypted backup restore formats missing'
