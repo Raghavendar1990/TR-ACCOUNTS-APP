@@ -12,15 +12,14 @@
 2. Choose a region close to you.
 3. Publish the rules from repository file `firestore.rules`.
 
-## 3. Firebase phone claim requirement
-- Cloud Sync now requires a Firebase ID token with a phone-number claim matching the Profile number. The local Self-SMS check is not cloud authorization.
-- Firestore rules independently require `request.auth.token.phone_number` for ledger sync entries and ledger-data writes.
-- Firebase Console → Authentication → Sign-in method: enable **Phone** (and Google), configure authorized domains, and review billing/SMS limits.
-- **Important:** The app currently does not implement Firebase Phone Authentication sign-in to acquire the phone claim. Cloud Sync is intentionally blocked until that app flow is implemented and tested. Enabling the provider alone will not unlock sync.
-- Gmail owner UID and owner-approved device UID controls remain in place; different Gmail access remains owner-approval based.
+## 3. Free same-number Self-SMS verification
+- The app does **not** use Firebase Phone Authentication or Firebase SMS OTP, avoiding Firebase phone-verification SMS charges.
+- In Profile, enter the mobile number, select SIM 1 or SIM 2, and run the same-number Self-SMS verification. The native Android app sends its own short verification SMS to that same number and matches the received message.
+- This is a local/device verification gate only; it is not cryptographic proof to Firestore. Cloud rules protect data using the signed-in owner UID or an owner-approved device UID. Never publish rules that grant access based only on a local Self-SMS result.
+- Same Gmail uses the owner UID. Different Gmail/device access requires the owner's device approval flow.
 
 ## 4. Testing
 - Publish Firestore rules after changes.
 - Test with a new empty account and dummy entries first.
-- Verify Firebase Phone Authentication claim, Gmail login, sync, restore, conflict merge, and owner approval on two devices.
+- Verify Gmail login, local same-number Self-SMS, sync, restore, conflict merge, and owner approval on two devices.
 - Do not use the prototype as the only copy of real financial records until these tests pass.
