@@ -23,10 +23,9 @@ function profileFromFields(){const dob=(document.getElementById("profileDOB")?.v
 function profileStatus(s){const el=document.getElementById("profileStatus");if(el)el.textContent=s;}
 function saveProfileLocal(p){localStorage.setItem(PROFILE_KEY,JSON.stringify(p));}
 
-function selfSmsVerifiedForCurrentPhone(){
- const phone=(document.getElementById("profilePhone")?.value||"").replace(/\D/g,"").slice(-10);
- if(!/^[6-9]\d{9}$/.test(phone))return false;
- try{const v=JSON.parse(localStorage.getItem("tr_accounts_self_sms_verified_v1")||"null");return !!v&&v.phone===phone&&(v.method==="self-sms"||v.method==="native-self-sms");}catch{return false;}
+async function firebasePhoneClaimVerified(user=currentUser){
+ if(!user)return false;
+ try{const token=await user.getIdTokenResult(true),claim=String(token?.claims?.phone_number||"").replace(/\D/g,"").slice(-10),profilePhone=(document.getElementById("profilePhone")?.value||"").replace(/\D/g,"").slice(-10);return !!claim&&/^[6-9]\d{9}$/.test(claim)&&(!profilePhone||claim===profilePhone);}catch{return false;}
 }
 const SYNC_COL="syncEntries";
 const SYNC_ARRAYS=["people","transactions","recycleBin","businesses","businessTransactions","partners","partnerRecords","customers","suppliers","inventory","sales","purchases","expenses","payments","employees","payroll","cashAccounts","cashTransactions"];
@@ -39,15 +38,15 @@ function mergeDatasets(local,remote,remoteDocs={}){const out={...remote};const t
 async function migrateLegacy(ref,legacy){if(!legacy||!SYNC_ARRAYS.some(k=>Array.isArray(legacy[k])))return;const existing=await getEntryDocs(ref);if(Object.keys(existing).length)return;await writeEntrySet(ref,legacy);}
 async function syncData(){
  currentUser=await waitForAuthUser();if(!currentUser||syncing||!window.TRAccountsCloudData)return;
- if(!selfSmsVerifiedForCurrentPhone()){status("Cloud Sync locked: complete Self-SMS verification in Profile first.");return;}
- syncing=true;status("Gmail login and Self-SMS check complete. Restoring and syncing…");
+ if(!await firebasePhoneClaimVerified(currentUser)){status("Cloud Sync locked: sign in with Firebase-verified phone number matching Profile. Self-SMS alone is not server authentication.");return;}
+ syncing=true;status("Firebase phone claim verified. Restoring and syncing…");
  try{const ref=doc(db,"trAccountsUsers",currentUser.uid),snap=await getDoc(ref),local=window.TRAccountsCloudData();if(snap.exists())await migrateLegacy(ref,snap.data().data);const remoteDocs=await getEntryDocs(ref),remote=rebuildFromDocs(remoteDocs);const merged=mergeDatasets(local,remote,remoteDocs);if(Object.keys(remoteDocs).length){window.dispatchEvent(new CustomEvent("tr-accounts-load-cloud",{detail:merged}));}else{await writeEntrySet(ref,local);}lastCloudJSON=jsonData(merged);await writeEntrySet(ref,merged);status("Cloud: automatic entry sync ready");}
  catch(err){console.error("Cloud sync:",err);status("Cloud sync failed. Local data remains safe.");}
  finally{syncing=false;}
 }
 async function guardedUpload(){
  currentUser=await waitForAuthUser();if(!currentUser||!window.TRAccountsCloudData){status("Google login session not detected. Tap Google Login again.");return false;}
- if(!selfSmsVerifiedForCurrentPhone()){status("Cloud Sync blocked. Complete Self-SMS verification in Profile first.");return false;}
+ if(!await firebasePhoneClaimVerified(currentUser)){status("Cloud Sync blocked: Firebase phone claim required; local Self-SMS is not enough.");return false;}
  try{const ref=doc(db,"trAccountsUsers",currentUser.uid),local=window.TRAccountsCloudData();await writeEntrySet(ref,local);lastCloudJSON=jsonData(local);status("Cloud: entry sync complete");return true;}
  catch(err){console.error("Entry sync:",err);status("Cloud sync failed. Local data is safe.");return false;}
 }
