@@ -48,14 +48,14 @@ async function syncData(){
  currentUser=await waitForAuthUser();if(!currentUser||syncing||!window.TRAccountsCloudData)return;
  if(!selfSmsVerifiedForCurrentPhone()){status("Cloud Sync locked: verify the Profile phone using same-number Self-SMS first.");return;}
  syncing=true;status("Self-SMS verified. Restoring and syncing…");
- try{const ref=doc(db,"trAccountsUsers",currentUser.uid),snap=await getDoc(ref),local=window.TRAccountsCloudData();if(snap.exists())await migrateLegacy(ref,snap.data().data);const remoteDocs=await getEntryDocs(ref),remote=rebuildFromDocs(remoteDocs);const merged=mergeDatasets(local,remote,remoteDocs);if(Object.keys(remoteDocs).length){window.dispatchEvent(new CustomEvent("tr-accounts-load-cloud",{detail:merged}));}else{await writeEntrySet(ref,local);}lastCloudJSON=jsonData(merged);await writeEntrySet(ref,merged);status("Cloud: automatic entry sync ready");}
+ try{const ref=doc(db,"trAccountsUsers",currentUser.uid),snap=await getDoc(ref),local=window.TRAccountsCloudData();if(snap.exists())await migrateLegacy(ref,snap.data().data);const remoteDocs=await getEntryDocs(ref),remote=rebuildFromDocs(remoteDocs);const merged=mergeDatasets(local,remote,remoteDocs);if(Object.keys(remoteDocs).length){window.dispatchEvent(new CustomEvent("tr-accounts-load-cloud",{detail:merged}));}else{await writeEntrySet(ref,local);}lastCloudJSON=jsonData(merged);await writeEntrySet(ref,merged);if(window.TRStorage?.autoBackup)await window.TRStorage.autoBackup(true);status("Cloud: automatic entry sync ready");}
  catch(err){console.error("Cloud sync:",err);status("Cloud sync failed. Local data remains safe.");}
  finally{syncing=false;}
 }
 async function guardedUpload(){
  currentUser=await waitForAuthUser();if(!currentUser||!window.TRAccountsCloudData){status("Google login session not detected. Tap Google Login again.");return false;}
  if(!selfSmsVerifiedForCurrentPhone()){status("Cloud Sync blocked: verify the Profile phone with same-number Self-SMS first.");return false;}
- try{const ref=doc(db,"trAccountsUsers",currentUser.uid),local=window.TRAccountsCloudData();await writeEntrySet(ref,local);lastCloudJSON=jsonData(local);status("Cloud: entry sync complete");return true;}
+ try{const ref=doc(db,"trAccountsUsers",currentUser.uid),local=window.TRAccountsCloudData();await writeEntrySet(ref,local);lastCloudJSON=jsonData(local);if(window.TRStorage?.autoBackup)await window.TRStorage.autoBackup(true);status("Cloud: entry sync complete");return true;}
  catch(err){console.error("Entry sync:",err);status("Cloud sync failed. Local data is safe.");return false;}
 }
 // Same-number Self-SMS check. This is a manual device check, not a cryptographic authentication method.
