@@ -18,9 +18,9 @@ jobs:
           scripts=re.findall(r'<script(?:\s+type=["\']module["\'])?>(.*?)</script>', html, re.S)
           if not scripts:
             raise SystemExit('No inline script found')
-          open('/tmp/tr-accounts.js','w',encoding='utf-8').write(scripts[-1])
+          open('/tmp/tr-accounts.mjs','w',encoding='utf-8').write(scripts[-1])
           PY
-          node --check /tmp/tr-accounts.js
+          node --check /tmp/tr-accounts.mjs
       - name: Validate encrypted local storage JavaScript
         run: cp storage.js /tmp/tr-accounts-storage.js && node --check /tmp/tr-accounts-storage.js
       - name: Validate cloud module JavaScript syntax
