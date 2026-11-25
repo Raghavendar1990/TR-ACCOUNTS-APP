@@ -25,6 +25,10 @@ service cloud.firestore {
         allow read, write: if owner(uid) || approvedDevice(uid);
       }
 
+      match /keyRecovery/{keyId} {
+        allow read, write: if owner(uid) || approvedDevice(uid);
+      }
+
       match /deviceRequests/{requestId} {
         allow create: if signedIn()
           && request.resource.data.requesterUid == request.auth.uid
