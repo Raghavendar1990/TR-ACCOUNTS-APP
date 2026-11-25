@@ -155,5 +155,5 @@ jobs:
       - uses: actions/upload-artifact@v5
         with:
           name: TR-Accounts-v2.0.8-SIM-SMS-OTP
-          path: verified/TR-Accounts-v2.0.7.apk
+          path: verified/TR-Accounts-v2.0.8.apk
           retention-days: 30
