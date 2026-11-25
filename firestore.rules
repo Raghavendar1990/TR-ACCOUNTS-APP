@@ -2,28 +2,27 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
-    function phoneClaim() { return signedIn() && request.auth.token.phone_number != null; }
     function owner(uid) { return signedIn() && request.auth.uid == uid; }
     function approvedDevice(uid) {
-      return phoneClaim()
+      return signedIn()
         && exists(/databases/$(database)/documents/trAccountsUsers/$(uid))
         && request.auth.uid in get(/databases/$(database)/documents/trAccountsUsers/$(uid)).data.approvedDevices;
     }
 
     match /trAccountsUsers/{uid} {
-      // Profile metadata may be saved without a phone claim; cloud ledger data requires Firebase-verified phone auth.
+      // Profile metadata and sync data use owner UID or owner-approved device authorization.
       allow read: if owner(uid) || approvedDevice(uid);
       allow create: if owner(uid) && request.resource.data.keys().hasOnly(['profile', 'profileUpdatedAt']);
       allow delete: if owner(uid);
       allow update: if (owner(uid)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['profile', 'profileUpdatedAt']))
-        || (phoneClaim() && owner(uid)
+        || (owner(uid)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['data', 'updatedAt']))
-        || (approvedDevice(uid) && phoneClaim()
+        || (approvedDevice(uid)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['data', 'updatedAt']));
 
       match /syncEntries/{entryId} {
-        allow read, write: if phoneClaim() && (owner(uid) || approvedDevice(uid));
+        allow read, write: if owner(uid) || approvedDevice(uid);
       }
 
       match /deviceRequests/{requestId} {
