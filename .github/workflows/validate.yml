@@ -33,10 +33,10 @@ jobs:
           rules = open('firestore.rules', encoding='utf-8').read()
           assert 'APP_PIN_ATTEMPTS_KEY' in html and 'getAppPinAttempts()>=5' in html, 'PIN attempt limit/recovery visibility missing'
           assert 'Create new 4–8 digit PIN' in html and 'Create a new recovery code' in html, 'Recovery must replace PIN and recovery code'
-          assert 'selfSmsVerifiedForCurrentPhone' in cloud and 'Cloud Sync blocked' in cloud, 'Cloud sync must require same-number Self-SMS check'
+          assert 'firebasePhoneClaimVerified' in cloud and 'Firebase phone claim required' in cloud, 'Cloud Sync must require Firebase phone claim'
           assert r'if(!/^[6-9]\\d{9}$/.test(phone))return false;' not in cloud, 'Self-SMS regex must not contain escaped backslash before digit class'
           assert r'if(!/^[6-9]\d{9}$/.test(phone))return false;' in cloud, 'Self-SMS gate must accept valid 10-digit phone numbers'
-          assert 'PhoneAuthProvider' not in cloud and 'phoneClaimVerified' not in cloud, 'Firebase SMS OTP auth must be removed'
+          assert 'request.auth.token.phone_number != null' in rules and 'allow read, write: if phoneClaim() && (owner(uid) || approvedDevice(uid))' in rules, 'Firestore must enforce Firebase phone claim on sync entries'
           assert 'TR Accounts Logo' in html and 'trLoginForgot' in html and 'attempts>=5' in html, 'PIN login logo or 5-failure recovery visibility missing'
           assert 'trRecoveryGoogle' in html and 'trRecoveryPhone' in html and 'Login with Gmail' in html, 'Gmail + registered phone PIN recovery UI missing'
           assert 'Verify Gmail & Phone' in html and 'Create New PIN' in html and 'Save New PIN' in html, 'Gmail/phone PIN reset flow missing'
@@ -44,8 +44,8 @@ jobs:
           assert 'sendSelfSms({phone:"+91"+phone,simSlot:Number(sim),message:"TRACCOUNTS-OTP:"+otp' in cloud, 'Native Self-SMS must send OTP to the same entered number and selected SIM'
           assert 'Self-SMS is manual' in html, 'UI must disclose manual Self-SMS limitation'
           assert 'sync-conflict-' in cloud and 'syncConflict:true' in cloud, 'Sync conflict preservation missing'
-          assert 'allow read: if owner(uid) || approvedDevice(uid)' in rules, 'Firestore owner sync must require signed-in owner UID'
-          assert 'allow read, write: if owner(uid) || approvedDevice(uid)' in rules, 'Sync entry access must be owner or approved device'
+          assert 'allow read: if owner(uid) || approvedDevice(uid)' in rules, 'Firestore profile access must require signed-in owner UID'
+          assert 'sync-conflict-' in cloud and 'syncConflict:true' in cloud, 'Conflict records must preserve differing entries'
           print('Security guardrail assertions passed')
           PY
       - name: Validate JSON files
