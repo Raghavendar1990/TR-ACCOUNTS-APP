@@ -51,14 +51,14 @@ jobs:
                   variables.write_text(v)
           PY
           python3 - <<'PY'
-from PIL import Image
-from pathlib import Path
-im=Image.open('TR_Accounts_Logo_Transparent-1.png').convert('RGBA')
-for d,s in [('mipmap-mdpi',48),('mipmap-hdpi',72),('mipmap-xhdpi',96),('mipmap-xxhdpi',144),('mipmap-xxxhdpi',192)]:
- p=Path('android/app/src/main/res')/d;p.mkdir(parents=True,exist_ok=True)
- im.resize((s,s),Image.Resampling.LANCZOS).save(p/'ic_launcher.png')
- im.resize((s,s),Image.Resampling.LANCZOS).save(p/'ic_launcher_round.png')
-PY
+          from PIL import Image
+          from pathlib import Path
+          im=Image.open('TR_Accounts_Logo_Transparent-1.png').convert('RGBA')
+          for d,s in [('mipmap-mdpi',48),('mipmap-hdpi',72),('mipmap-xhdpi',96),('mipmap-xxhdpi',144),('mipmap-xxxhdpi',192)]:
+           p=Path('android/app/src/main/res')/d;p.mkdir(parents=True,exist_ok=True)
+           im.resize((s,s),Image.Resampling.LANCZOS).save(p/'ic_launcher.png')
+           im.resize((s,s),Image.Resampling.LANCZOS).save(p/'ic_launcher_round.png')
+          PY
           npx cap sync android
       - name: Configure optional stable Android signing
         env:
