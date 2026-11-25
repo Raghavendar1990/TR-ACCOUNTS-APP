@@ -176,10 +176,10 @@ jobs:
           "$APKSIGNER" verify --verbose "$APK"
           "$AAPT" dump badging "$APK" | grep -E "package:|sdkVersion:|targetSdkVersion:"
           mkdir -p verified
-          cp "$APK" verified/TR-Accounts-v2.0.9.apk
+          cp "$APK" verified/TR-Accounts-v2.1.0.apk
           rm -f android/app/keystore/tr-accounts-release.jks
       - uses: actions/upload-artifact@v5
         with:
-          name: TR-Accounts-v2.0.9-SECURE-BACKUP
-          path: verified/TR-Accounts-v2.0.8.apk
+          name: TR-Accounts-v2.1.0-SECURE-BACKUP
+          path: verified/TR-Accounts-v2.1.0.apk
           retention-days: 30
