@@ -2,7 +2,7 @@
 
 Mobile-first person-wise and business accounting app. This repository is an active prototype; features still require browser/device and deployment validation.
 
-## Security and backups\n- Automatic AES-256-GCM encryption for local account data and proof attachments; Android APK uses a non-exportable Android Keystore key, while web/PWA uses a non-exportable WebCrypto key in IndexedDB. Legacy local data and proof files are migrated in place.\n- Cloud sync entries are AES-GCM encrypted before Firestore writes; key recovery uses Gmail-authenticated Firebase key escrow (not end-to-end encryption).\n- Automatic dated encrypted backups in `Documents/TR Accounts/Backup` on Android; browser builds use a folder picker when available.\n- Gmail-authenticated encrypted backups can be restored on a new device after publishing the updated Firestore rules. Local-only encrypted backups require the original device key.\n\n## Features
+## Security and backups\n- Automatic AES-256-GCM encryption for local account data and proof attachments; Android APK uses a non-exportable Android Keystore key, while web/PWA uses a non-exportable WebCrypto key in IndexedDB. Legacy local data and proof files are migrated in place.\n- Cloud sync entries are AES-GCM encrypted before Firestore writes; key recovery uses Gmail-authenticated Firebase key escrow (not end-to-end encryption).\n- Automatic dated encrypted backups in `Documents/.TRAccounts/Backup` on Android; browser builds use a folder picker when available.\n- Gmail-authenticated encrypted backups can be restored on a new device after publishing the updated Firestore rules. Local-only encrypted backups require the original device key.\n\n## Features
 - Dashboard totals, person-wise ledgers, transaction add/edit, history filters, recycle-bin restore/delete
 - Person-wise statements with date filtering, opening balance, running balance, print/PDF, and WhatsApp sharing
 - Local JSON backup and restore; proof attachments and IndexedDB storage
@@ -31,7 +31,7 @@ Cloud Sync uses Gmail/Firebase Auth UID plus same-number Self-SMS verification o
 See [Firebase setup instructions](FIREBASE_SETUP.md). Enable Google sign-in and Firestore, then publish the updated `firestore.rules`. Same Gmail uses the same owner UID; the app's Self-SMS is a local verification gate. Different Gmail remains owner-approval based.
 
 ## Debug APK
-The GitHub Actions workflow builds v2.0.5 and verifies APK signature/package metadata. Stable signing secrets are optional; without them, the artifact uses Android debug signing and must not be treated as a production release.
+The GitHub Actions workflow builds v2.1.0 and verifies APK signature/package metadata. Stable signing secrets are optional; without them, the artifact uses Android debug signing and must not be treated as a production release.
 
 ## Validation
 Validation and build/deploy workflows must be reviewed in GitHub Actions after each relevant commit. No real-device or live Firebase verification is claimed.
