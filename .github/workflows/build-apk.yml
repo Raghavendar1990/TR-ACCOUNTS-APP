@@ -46,12 +46,12 @@ jobs:
           """ % pkg)
           text=main.read_text()
           if 'TRSmsPlugin' not in text:
-            text=text.replace('import com.getcapacitor.BridgeActivity;', 'import com.getcapacitor.BridgeActivity;\\nimport com.getcapacitor.Plugin;')
-            text=text.replace('public class MainActivity extends BridgeActivity {', 'public class MainActivity extends BridgeActivity {\\n    @Override public void onCreate(android.os.Bundle savedInstanceState) {\\n        registerPlugin(TRSmsPlugin.class);\\n        super.onCreate(savedInstanceState);\\n    }')
+            text=text.replace('import com.getcapacitor.BridgeActivity;', 'import com.getcapacitor.BridgeActivity;\nimport com.getcapacitor.Plugin;')
+            text=text.replace('public class MainActivity extends BridgeActivity {', 'public class MainActivity extends BridgeActivity {\n    @Override public void onCreate(android.os.Bundle savedInstanceState) {\n        registerPlugin(TRSmsPlugin.class);\n        super.onCreate(savedInstanceState);\n    }')
             main.write_text(text)
           manifest=root/'AndroidManifest.xml'; m=manifest.read_text()
-          m=m.replace('<manifest ', '<manifest\\n    xmlns:tools="http://schemas.android.com/tools" ',1) if 'xmlns:tools' not in m else m
-          m=m.replace('<application', '<uses-permission android:name="android.permission.SEND_SMS" />\\n    <uses-permission android:name="android.permission.RECEIVE_SMS" />\\n    <uses-permission android:name="android.permission.READ_PHONE_STATE" />\\n    <application',1)
+          m=m.replace('<manifest ', '<manifest\n    xmlns:tools="http://schemas.android.com/tools" ',1) if 'xmlns:tools' not in m else m
+          m=m.replace('<application', '<uses-permission android:name="android.permission.SEND_SMS" />\n    <uses-permission android:name="android.permission.RECEIVE_SMS" />\n    <uses-permission android:name="android.permission.READ_PHONE_STATE" />\n    <application',1)
           manifest.write_text(m)
           PY
           python3 - <<'PY'
