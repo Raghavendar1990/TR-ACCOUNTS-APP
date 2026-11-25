@@ -1,6 +1,6 @@
-/* TR Accounts Cloud: Google sign-in, automatic sync, and conflict-safe uploads. Self-SMS is optional. */
+/* TR Accounts Cloud: Google sign-in, automatic sync, conflict-safe uploads, and same-number Self-SMS check. */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, reauthenticateWithPopup, setPersistence, browserLocalPersistence, signInWithCredential, PhoneAuthProvider, linkWithCredential, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, reauthenticateWithPopup, setPersistence, browserLocalPersistence, signInWithCredential } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp, runTransaction, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
@@ -23,41 +23,11 @@ function profileFromFields(){const dob=(document.getElementById("profileDOB")?.v
 function profileStatus(s){const el=document.getElementById("profileStatus");if(el)el.textContent=s;}
 function saveProfileLocal(p){localStorage.setItem(PROFILE_KEY,JSON.stringify(p));}
 
-function updatePhoneStatus(msg){const el=document.getElementById("phoneVerifyStatus");if(el)el.textContent=msg;}
-function normalizePhone(){let p=(document.getElementById("registerPhone")?.value||"").trim().replace(/[\\s-]/g,"");if(/^\\d{10}$/.test(p))p="+91"+p;else if(/^91\\d{10}$/.test(p))p="+"+p;return /^\\+91\\d{10}$/.test(p)?p:null;}
-let phoneVerifier=null,phoneVerificationId=null,nativePhoneListenerHandles=[];
-function phoneClaimVerified(){return !!(auth?.currentUser?.phoneNumber);}
-async function sendFirebasePhoneOtp(){const phone=normalizePhone();if(!phone){updatePhoneStatus("Enter a valid 10-digit Indian mobile number.");return;}if(!auth?.currentUser){updatePhoneStatus("Sign in with Google first.");return;}try{
- if(isNativeApp()){
-  const {FirebaseAuthentication}=await import("@capacitor-firebase/authentication");
-  // Native plugin account must match the Google account UID used by the JS SDK.
-  const nativeUser=await FirebaseAuthentication.getCurrentUser();
-  if(!nativeUser?.user?.uid)throw new Error("Native Google session not found. Please sign out and sign in with Google again.");
-  nativePhoneListenerHandles.forEach(h=>h.remove?.());nativePhoneListenerHandles=[];
-  let codeSentResolve,codeSentReject;const codeSent=new Promise((resolve,reject)=>{codeSentResolve=resolve;codeSentReject=reject;});
-  nativePhoneListenerHandles.push(await FirebaseAuthentication.addListener("phoneCodeSent",event=>{phoneVerificationId=event.verificationId;codeSentResolve(event.verificationId);}));
-  nativePhoneListenerHandles.push(await FirebaseAuthentication.addListener("phoneVerificationFailed",event=>codeSentReject(new Error(event.message||event.code||"Native phone verification failed"))));
-  await FirebaseAuthentication.linkWithPhoneNumber({phoneNumber:phone});
-  phoneVerificationId=await Promise.race([codeSent,new Promise((_,reject)=>setTimeout(()=>reject(new Error("OTP request timed out. Try again.")),60000))]);
-  updatePhoneStatus("Firebase OTP sent. Enter the SMS code to verify.");
- }else{
-  if(!phoneVerifier)phoneVerifier=new RecaptchaVerifier(auth,"phoneRecaptcha",{});
-  const provider=new PhoneAuthProvider(auth);phoneVerificationId=await provider.verifyPhoneNumber(phone,phoneVerifier);
-  updatePhoneStatus("Firebase OTP sent. Enter the SMS code to verify.");
- }
-}catch(err){console.error(err);updatePhoneStatus("OTP send failed: "+(err.code||err.message));}}
-async function verifyFirebasePhoneOtp(){const code=(document.getElementById("phoneOTP")?.value||"").trim();if(!phoneVerificationId||!code){updatePhoneStatus("Send Firebase OTP first and enter the code.");return;}try{
- if(isNativeApp()){
-  const {FirebaseAuthentication}=await import("@capacitor-firebase/authentication");
-  // Verify natively, then link the same SMS credential to the JS Firebase user for Firestore rules.
-  await FirebaseAuthentication.confirmVerificationCode({verificationId:phoneVerificationId,verificationCode:code});
-  const credential=PhoneAuthProvider.credential(phoneVerificationId,code);
-  await linkWithCredential(auth.currentUser,credential);
- }else{const credential=PhoneAuthProvider.credential(phoneVerificationId,code);await linkWithCredential(auth.currentUser,credential);}
- currentUser=auth.currentUser;phoneVerificationId=null;updatePhoneStatus("Firebase phone verification successful. Cloud Sync enabled.");await syncData();
-}catch(err){console.error(err);updatePhoneStatus("OTP verification failed: "+(err.code||err.message));}}
-if(document.getElementById("sendPhoneOTP"))document.getElementById("sendPhoneOTP").addEventListener("click",e=>{e.preventDefault();e.stopPropagation();sendFirebasePhoneOtp();});
-if(document.getElementById("verifyPhoneOTP"))document.getElementById("verifyPhoneOTP").addEventListener("click",verifyFirebasePhoneOtp);
+function selfSmsVerifiedForCurrentPhone(){
+ const phone=(document.getElementById("profilePhone")?.value||"").replace(/\\D/g,"").slice(-10);
+ if(!/^[6-9]\\d{9}$/.test(phone))return false;
+ try{const v=JSON.parse(localStorage.getItem("tr_accounts_self_sms_verified_v1")||"null");return !!v&&v.phone===phone&&v.method==="self-sms";}catch{return false;}
+}
 const SYNC_COL="syncEntries";
 const SYNC_ARRAYS=["people","transactions","recycleBin","businesses","businessTransactions","partners","partnerRecords","customers","suppliers","inventory","sales","purchases","expenses","payments","employees","payroll","cashAccounts","cashTransactions"];
 function stableKey(kind,item,index){const raw=item?.id??item?.name??item?.person??item?.partner??item?.business??item?.date??index;return String(raw).replace(/[\\/\\.#$\\[\\]]/g,"_").slice(0,120);}
@@ -69,20 +39,20 @@ function mergeDatasets(local,remote,remoteDocs={}){const out={...remote};const t
 async function migrateLegacy(ref,legacy){if(!legacy||!SYNC_ARRAYS.some(k=>Array.isArray(legacy[k])))return;const existing=await getEntryDocs(ref);if(Object.keys(existing).length)return;await writeEntrySet(ref,legacy);}
 async function syncData(){
  currentUser=await waitForAuthUser();if(!currentUser||syncing||!window.TRAccountsCloudData)return;
- if(!phoneClaimVerified()){status("Cloud Sync locked: verify your registered mobile using Firebase OTP first.");return;}
- syncing=true;status("Google login and Firebase phone verification successful. Restoring and syncing…");
+ if(!selfSmsVerifiedForCurrentPhone()){status("Cloud Sync locked: complete Self-SMS verification in Profile first.");return;}
+ syncing=true;status("Gmail login and Self-SMS check complete. Restoring and syncing…");
  try{const ref=doc(db,"trAccountsUsers",currentUser.uid),snap=await getDoc(ref),local=window.TRAccountsCloudData();if(snap.exists())await migrateLegacy(ref,snap.data().data);const remoteDocs=await getEntryDocs(ref),remote=rebuildFromDocs(remoteDocs);const merged=mergeDatasets(local,remote,remoteDocs);if(Object.keys(remoteDocs).length){window.dispatchEvent(new CustomEvent("tr-accounts-load-cloud",{detail:merged}));}else{await writeEntrySet(ref,local);}lastCloudJSON=jsonData(merged);await writeEntrySet(ref,merged);status("Cloud: automatic entry sync ready");}
  catch(err){console.error("Cloud sync:",err);status("Cloud sync failed. Local data remains safe.");}
  finally{syncing=false;}
 }
 async function guardedUpload(){
  currentUser=await waitForAuthUser();if(!currentUser||!window.TRAccountsCloudData){status("Google login session not detected. Tap Google Login again.");return false;}
- if(!phoneClaimVerified()){status("Cloud Sync blocked. Complete Firebase mobile OTP verification first.");return false;}
+ if(!selfSmsVerifiedForCurrentPhone()){status("Cloud Sync blocked. Complete Self-SMS verification in Profile first.");return false;}
  try{const ref=doc(db,"trAccountsUsers",currentUser.uid),local=window.TRAccountsCloudData();await writeEntrySet(ref,local);lastCloudJSON=jsonData(local);status("Cloud: entry sync complete");return true;}
  catch(err){console.error("Entry sync:",err);status("Cloud sync failed. Local data is safe.");return false;}
 }
-// Optional Self-SMS profile verification (no Firebase SMS billing).
-(()=>{const phoneEl=document.getElementById("profilePhone"),startBtn=document.getElementById("selfSmsVerifyBtn"),statusEl=document.getElementById("selfSmsVerifyStatus"),box=document.getElementById("selfSmsCodeBox"),codeEl=document.getElementById("selfSmsCodeInput"),confirmBtn=document.getElementById("selfSmsConfirmBtn");if(!phoneEl||!startBtn)return;let code=null,verifiedPhone=null;const key="tr_accounts_self_sms_verified_v1";function showStatus(t){if(statusEl)statusEl.textContent=t;}startBtn.addEventListener("click",()=>{let phone=(phoneEl.value||"").replace(/[^0-9+]/g,"");if(phone.startsWith("+91"))phone=phone.slice(3);if(phone.startsWith("91")&&phone.length===12)phone=phone.slice(2);if(!/^[6-9]\d{9}$/.test(phone)){showStatus("Enter a valid 10-digit Indian mobile number first.");return;}code=String(Math.floor(100000+Math.random()*900000));verifiedPhone=phone;box.style.display="block";codeEl.value="";showStatus("Send the SMS to your own number, then enter the received code.");const body=encodeURIComponent("TR Accounts mobile verification code: "+code+". If you did not request this, ignore.");window.location.href="sms:+91"+phone+"?body="+body;});confirmBtn.addEventListener("click",()=>{if(!code||!verifiedPhone){showStatus("Start Self-SMS verification first.");return;}if(codeEl.value.trim()!==code){showStatus("Code does not match. Check the SMS and try again.");return;}localStorage.setItem(key,JSON.stringify({phone:verifiedPhone,verifiedAt:new Date().toISOString(),method:"self-sms"}));showStatus("Verified via Self-SMS for +91 "+verifiedPhone+". Save Profile to store it.");code=null;verifiedPhone=null;box.style.display="none";});phoneEl.addEventListener("input",()=>{try{const v=JSON.parse(localStorage.getItem(key)||"null");if(v&&v.phone!==phoneEl.value.replace(/\D/g,"").slice(-10)){localStorage.removeItem(key);showStatus("Phone number changed. Verify the new number.");}}catch{}});})();
+// Same-number Self-SMS check. This is a manual device check, not a cryptographic authentication method.
+(()=>{const phoneEl=document.getElementById("profilePhone"),startBtn=document.getElementById("selfSmsVerifyBtn"),statusEl=document.getElementById("selfSmsVerifyStatus"),box=document.getElementById("selfSmsCodeBox"),codeEl=document.getElementById("selfSmsCodeInput"),confirmBtn=document.getElementById("selfSmsConfirmBtn");if(!phoneEl||!startBtn)return;let code=null,verifiedPhone=null;const key="tr_accounts_self_sms_verified_v1";function showStatus(t){if(statusEl)statusEl.textContent=t;}startBtn.addEventListener("click",()=>{let phone=(phoneEl.value||"").replace(/[^0-9+]/g,"");if(phone.startsWith("+91"))phone=phone.slice(3);if(phone.startsWith("91")&&phone.length===12)phone=phone.slice(2);if(!/^[6-9]\d{9}$/.test(phone)){showStatus("Enter a valid 10-digit Indian mobile number first.");return;}code=String(Math.floor(100000+Math.random()*900000));verifiedPhone=phone;box.style.display="block";codeEl.value="";showStatus("Send the pre-filled SMS to the same number, return here, and enter the code. Delivery cannot be automatically confirmed.");const body=encodeURIComponent("TR Accounts Self-SMS check code: "+code+". Send this SMS to your own number, then return to the app.");window.location.href="sms:+91"+phone+"?body="+body;});confirmBtn.addEventListener("click",()=>{if(!code||!verifiedPhone){showStatus("Start Self-SMS verification first.");return;}if(codeEl.value.trim()!==code){showStatus("Code does not match. Check the SMS and try again.");return;}localStorage.setItem(key,JSON.stringify({phone:verifiedPhone,verifiedAt:new Date().toISOString(),method:"self-sms"}));showStatus("Self-SMS code matched for +91 "+verifiedPhone+". Save Profile, then use Sync Now. SMS delivery is not automatically verified.");code=null;verifiedPhone=null;box.style.display="none";});phoneEl.addEventListener("input",()=>{try{const v=JSON.parse(localStorage.getItem(key)||"null");if(v&&v.phone!==phoneEl.value.replace(/\D/g,"").slice(-10)){localStorage.removeItem(key);showStatus("Phone number changed. Verify the new number.");}}catch{}});})();
 
 document.getElementById("profileSave")?.addEventListener("click",async()=>{const p=profileFromFields(),email=auth?.currentUser?.email||document.getElementById("profileEmail")?.value||"";if(p.age&&!/^\d+$/.test(p.age)||Number(p.age)>120){profileStatus("Please enter a valid age.");return;}p.email=email;saveProfileLocal(p);const user=auth?.currentUser;if(user&&db){try{await setDoc(doc(db,"trAccountsUsers",user.uid),{profile:{name:p.name,phone:p.phone,phoneVerified:!!p.phoneVerified,dob:p.dob,age:p.age,gender:p.gender,email:user.email||""},profileUpdatedAt:serverTimestamp()},{merge:true});profileStatus("Profile saved to this device and Google account.");}catch(e){console.error(e);profileStatus("Saved locally. Cloud profile update failed.");}}else profileStatus("Profile saved on this device. Sign in to sync profile to Google.");});
 if(missing){status("Firebase configuration is missing. Data remains on this device.");}
