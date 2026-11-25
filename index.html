@@ -307,6 +307,25 @@ document.addEventListener("click",async e =>{
   const dobInput=document.getElementById("profileDOB"),dobAgePreview=document.getElementById("profileAgePreview");
   function updateDOBPreview(){if(!dobInput.value){dobAgePreview.textContent="Age: —";return;}const d=new Date(dobInput.value+"T00:00:00"),today=new Date();let age=today.getFullYear()-d.getFullYear();const m=today.getMonth()-d.getMonth();if(m<0||(m===0&&today.getDate()<d.getDate()))age--;dobAgePreview.textContent=age>=0?"Age: "+age+" years":"Invalid date";}
   dobInput.addEventListener("change",updateDOBPreview);
+  // Load registration details into Profile and persist edits.
+  (async()=>{
+    const regKey="tr_accounts_registration_v1",profileKey="tr_accounts_profile_v1";
+    let reg=null,profile=null;
+    try{reg=JSON.parse(localStorage.getItem(regKey)||"null");}catch{}
+    try{profile=JSON.parse(localStorage.getItem(profileKey)||"null");}catch{}
+    const data=profile||reg||{};
+    if(data.name)document.getElementById("profileName").value=data.name;
+    if(data.phone)document.getElementById("profilePhone").value=data.phone;
+    if(data.dob)dobInput.value=data.dob;
+    if(data.gender)document.getElementById("profileGender").value=data.gender;
+    updateDOBPreview();
+    document.getElementById("profileSave").onclick=async()=>{
+      const updated={name:document.getElementById("profileName").value.trim(),phone:document.getElementById("profilePhone").value.trim(),dob:dobInput.value,gender:document.getElementById("profileGender").value,email:document.getElementById("profileEmail").value||"",updatedAt:new Date().toISOString()};
+      if(!updated.name||!/^[6-9][0-9]{9}$/.test(updated.phone)||!updated.dob||!updated.gender){alert("Name, valid 10-digit phone, DOB and gender are required.");return;}
+      try{localStorage.setItem(profileKey,JSON.stringify(updated));const savedReg={...(reg||{}),completed:true,name:updated.name,phone:updated.phone,dob:updated.dob,gender:updated.gender};localStorage.setItem(regKey,JSON.stringify(savedReg));const pref=window.Capacitor?.Plugins?.Preferences;if(pref)await pref.set({key:regKey,value:JSON.stringify(savedReg)});document.getElementById("profileStatus").textContent="Profile saved successfully.";alert("Profile saved.");}
+      catch(err){document.getElementById("profileStatus").textContent="Save failed: "+(err.message||err);}
+    };
+  })();
   const MODE_KEY="tr_account_mode_v1", MODE_PIN_KEY="tr_mode_switch_pin_v1";
   async function hashSwitchPin(pin){const salt=crypto.getRandomValues(new Uint8Array(16)),iterations=150000,base=await crypto.subtle.importKey("raw",new TextEncoder().encode(String(pin)),"PBKDF2",false,["deriveBits"]),bits=await crypto.subtle.deriveBits({name:"PBKDF2",hash:"SHA-256",salt,iterations},base,256),hex=a=>Array.from(a).map(x=>x.toString(16).padStart(2,"0")).join("");return "pbkdf2$"+iterations+"$"+hex(salt)+"$"+hex(new Uint8Array(bits));}
   async function verifySwitchPin(saved,entered){if(!saved)return false;if(saved.startsWith("pbkdf2$")){const parts=saved.split("$");if(parts.length!==4)return false;const iterations=Number(parts[1]),salt=Uint8Array.from(parts[2].match(/.{2}/g)||[],h=>parseInt(h,16)),expected=parts[3],base=await crypto.subtle.importKey("raw",new TextEncoder().encode(String(entered)),"PBKDF2",false,["deriveBits"]),bits=await crypto.subtle.deriveBits({name:"PBKDF2",hash:"SHA-256",salt,iterations},base,256),actual=Array.from(new Uint8Array(bits)).map(x=>x.toString(16).padStart(2,"0")).join("");return actual===expected;}if(saved.length===64&&/^[a-f0-9]+$/i.test(saved))return (await (async()=>{const bytes=new TextEncoder().encode(String(entered)),digest=await crypto.subtle.digest("SHA-256",bytes);return Array.from(new Uint8Array(digest)).map(x=>x.toString(16).padStart(2,"0")).join("");})())===saved;return String(entered)===saved;}
