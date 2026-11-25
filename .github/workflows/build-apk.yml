@@ -135,6 +135,8 @@ jobs:
           text=manifest.read_text()
           # Explicitly point both launcher icon variants at freshly generated resources.
           text=re.sub(r'<application\\b', '<application android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round"', text, count=1)
+          if 'android:icon="@mipmap/ic_launcher"' not in text or 'android:roundIcon="@mipmap/ic_launcher_round"' not in text:
+            raise SystemExit("Launcher icon manifest update failed: application tag was not patched")
           manifest.write_text(text)
           res=Path('android/app/src/main/res')
           # Put the adaptive foreground in drawable-nodpi so resource lookup is density-independent.
@@ -200,6 +202,9 @@ jobs:
           AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -n 1)
           "$APKSIGNER" verify --verbose "$APK"
           "$AAPT" dump badging "$APK" | grep -E "package:|sdkVersion:|targetSdkVersion:"
+          # Verify the built package actually contains launcher icon assets and manifest references.
+          "$AAPT" dump badging "$APK" | grep -q "application-icon-192"
+          "$AAPT" dump xmltree "$APK" AndroidManifest.xml | grep -E "ic_launcher|ic_launcher_round"
           mkdir -p verified
           cp "$APK" verified/TR-Accounts-v2.1.0.apk
           rm -f android/app/keystore/tr-accounts-release.jks
