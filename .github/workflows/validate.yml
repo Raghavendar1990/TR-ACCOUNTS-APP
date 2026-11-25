@@ -41,7 +41,7 @@ jobs:
           assert 'tr_accounts_recovery_hash_v1' in html and 'Recovery Setup' in html and 'Confirm Recovery Code' in html, 'Recovery code setup and confirmation missing'
           assert 'Verify Recovery Code' in html and 'Reset PIN' in html and 'Save New PIN' in html, 'Recovery-based PIN reset flow missing'
           assert 'Register Now' in html and 'regGmailLogin' not in html and 'First sign in with Gmail / Google.' not in html, 'Local-first registration without Gmail gate missing'
-          assert 'Send the pre-filled SMS to the same number' in cloud, 'Self-SMS must use the same entered number'
+          assert 'sendSelfSms({phone:"+91"+phone,simSlot:Number(sim),message:"TRACCOUNTS-OTP:"+otp' in cloud, 'Native Self-SMS must send OTP to the same entered number and selected SIM'
           assert 'Self-SMS is manual' in html, 'UI must disclose manual Self-SMS limitation'
           assert 'sync-conflict-' in cloud and 'syncConflict:true' in cloud, 'Sync conflict preservation missing'
           assert 'allow read: if owner(uid) || approvedDevice(uid)' in rules, 'Firestore owner sync must require signed-in owner UID'
