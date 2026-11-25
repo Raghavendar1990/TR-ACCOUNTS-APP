@@ -57,6 +57,45 @@
   .splash-logo-wrap{width:min(58vw,240px)}
   .splash-logo{max-height:34vh}
 }
+
+/* Apple-inspired premium UI refresh (visual-only; existing app logic preserved) */
+:root{--bg:#080b13;--panel:#111622;--panel2:#1a2130;--text:#f5f7fb;--muted:#a0a9ba;--line:#252d3c;--blue:#9b7cff;--cyan:#69d9f2;--green:#42d6a0;--red:#ff7187;--shadow:0 12px 36px #0004}
+body{background:radial-gradient(ellipse at 15% 0%,#17142b 0%,var(--bg) 48%);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",system-ui,sans-serif;letter-spacing:-.12px}
+body:before{opacity:.035;background-size:min(70vw,420px)}
+.app{padding-top:calc(14px + max(env(safe-area-inset-top,0px),16px))}
+.top{margin-bottom:18px}
+.logo{border-radius:14px;background:linear-gradient(145deg,#8b5cf6,#46d8ef);box-shadow:0 5px 18px #7860e530}
+.brand h1{font-size:19px;letter-spacing:-.45px;font-weight:750}
+.iconbtn,.soft{background:color-mix(in srgb,var(--panel2) 78%,transparent);border:1px solid color-mix(in srgb,var(--line) 78%,transparent);border-radius:14px;backdrop-filter:blur(20px)}
+.welcome h2{font-size:23px;letter-spacing:-.7px;font-weight:750}
+.cards{gap:9px}
+.card{background:linear-gradient(145deg,color-mix(in srgb,var(--panel) 96%,white 4%),var(--panel));border:1px solid color-mix(in srgb,var(--line) 75%,white 5%);border-radius:21px;box-shadow:0 8px 28px #0002;backdrop-filter:blur(22px)}
+.metric-label{font-size:11px;letter-spacing:.1px}
+.metric{font-size:clamp(16px,4.6vw,22px);letter-spacing:-.6px;font-weight:760}
+.section{margin-top:22px}
+.section-head h3{font-size:16px;letter-spacing:-.35px;font-weight:720}
+.quick{gap:8px}
+.quick button{background:color-mix(in srgb,var(--panel) 94%,white 6%);border:1px solid var(--line);border-radius:18px;box-shadow:0 3px 12px #0001;padding:13px 6px;transition:transform .15s ease,background .15s ease}
+.quick button:active{transform:scale(.97)}
+.quick .emoji{font-size:20px}
+.primary{background:linear-gradient(130deg,#8b5cf6,#42cfe9);border-radius:15px;box-shadow:0 5px 18px #7959e52a}
+.person{background:color-mix(in srgb,var(--panel) 94%,white 6%);border:1px solid var(--line);border-radius:17px;box-shadow:0 3px 14px #0001}
+.avatar{border-radius:50%;background:linear-gradient(145deg,#27203e,#1c3442);color:#9de7fa}
+.person-name{letter-spacing:-.2px}
+.nav{background:color-mix(in srgb,var(--panel) 82%,transparent);backdrop-filter:blur(28px) saturate(160%);border-top:1px solid color-mix(in srgb,var(--line) 65%,transparent);padding:5px 8px calc(5px + env(safe-area-inset-bottom))}
+.nav-inner{gap:2px}
+.nav button{border-radius:13px;padding:5px 2px;font-size:10px;transition:all .16s ease}
+.nav button.active{color:var(--cyan);background:color-mix(in srgb,var(--cyan) 10%,transparent)}
+.nav .nicon{font-size:18px}
+.modal{border-radius:26px;background:color-mix(in srgb,var(--panel) 95%,white 5%);border:1px solid var(--line);box-shadow:0 18px 50px #0005}
+.field input,.field select{border-radius:14px;background:var(--panel2);border-color:var(--line)}
+body.light{--bg:#f4f6fa;--panel:#ffffff;--panel2:#edf1f7;--text:#172033;--muted:#758096;--line:#e0e6ef;--shadow:0 10px 28px #14243c0c;background:radial-gradient(ellipse at 15% 0%,#e9e6ff 0%,var(--bg) 52%)}
+body.light .card{background:linear-gradient(145deg,#fff,#fbfcff);border-color:#e4e8f1;box-shadow:0 8px 28px #14243c0b}
+body.light .person{background:#fff}
+body.light .quick button{background:#fff;border-color:#e4e8f1}
+body.light .nav{background:#ffffffd9;border-color:#e4e8f1}
+@media(max-width:480px){.app{padding-left:13px;padding-right:13px}.cards{gap:7px}.card{padding:12px 10px;border-radius:19px}.metric{font-size:clamp(15px,4.3vw,19px)}.welcome h2{font-size:22px}.quick button{padding:11px 4px;border-radius:16px}.nav{padding-top:4px}.nav button{padding:5px 1px}}
+
 </style>
 </head>
 <body><div id="trSplash" aria-label="TR Accounts Book loading"><div class="splash-inner"><div class="splash-logo-wrap"><div class="splash-loader-ring" aria-hidden="true"></div><img src="./TR_Accounts_Logo_Transparent-1.png" alt="TR Accounts Book logo" class="splash-logo"></div><h1>TR Accounts Book</h1><p>Personal Accounts • Business Accounts • Cloud Sync</p><div class="splash-loading" aria-live="polite">Loading<span class="splash-dots"><span>.</span><span>.</span><span>.</span></span></div></div></div>
