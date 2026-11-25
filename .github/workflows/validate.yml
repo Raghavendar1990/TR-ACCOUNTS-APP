@@ -34,8 +34,15 @@ jobs:
           cloud = open('cloud.js', encoding='utf-8').read()
           rules = open('firestore.rules', encoding='utf-8').read()
           storage = open('storage.js', encoding='utf-8').read()
-          assert 'AES-GCM' in storage and 'device-data-key' in storage and 'crypto.subtle.generateKey' in storage, 'Automatic device encryption key and AES-GCM local encryption missing'\n          assert 'TRSecureStorage' in storage and 'TRSecurePlugin' in open('.github/workflows/build-apk.yml', encoding='utf-8').read() and 'AndroidKeyStore' in open('.github/workflows/build-apk.yml', encoding='utf-8').read(), 'Native Android Keystore integration missing'\n          assert 'chooseBackupFolder' in storage and 'autoBackup' in storage, 'Automatic encrypted backup folder support missing'\n          assert '@capacitor/filesystem' in open('package.json', encoding='utf-8').read() and '.TRAccounts/Backup' in storage, 'Android Documents backup folder integration missing'\n          assert 'TRAccountsCloudBackupEncrypt' in cloud and 'TR-CLOUD-ENC-1' in cloud, 'Gmail-authenticated cloud backup encryption/recovery missing'\n          assert 'encryptCloudItem' in cloud and 'decryptCloudItem' in cloud and 'keyRecovery' in cloud, 'Encrypted Firestore sync/key escrow missing'\n          assert 'TR-CLOUD-ENC-1' in html and 'TR-LOCAL-ENC-1' in html, 'Encrypted backup restore formats missing'
-          assert 'encrypted:true' in storage and 'ciphertext' in storage, 'Proof attachment encryption missing'\n          assert 'storageLocked' in storage and 'unlockAfterRestore' in storage, 'Encrypted-data recovery lock and restore-safe guard missing'
+          assert 'AES-GCM' in storage and 'device-data-key' in storage and 'crypto.subtle.generateKey' in storage, 'Automatic device encryption key and AES-GCM local encryption missing'
+          assert 'TRSecureStorage' in storage and 'TRSecurePlugin' in open('.github/workflows/build-apk.yml', encoding='utf-8').read() and 'AndroidKeyStore' in open('.github/workflows/build-apk.yml', encoding='utf-8').read(), 'Native Android Keystore integration missing'
+          assert 'chooseBackupFolder' in storage and 'autoBackup' in storage, 'Automatic encrypted backup folder support missing'
+          assert '@capacitor/filesystem' in open('package.json', encoding='utf-8').read() and '.TRAccounts/Backup' in storage, 'Android Documents backup folder integration missing'
+          assert 'TRAccountsCloudBackupEncrypt' in cloud and 'TR-CLOUD-ENC-1' in cloud, 'Gmail-authenticated cloud backup encryption/recovery missing'
+          assert 'encryptCloudItem' in cloud and 'decryptCloudItem' in cloud and 'keyRecovery' in cloud, 'Encrypted Firestore sync/key escrow missing'
+          assert 'TR-CLOUD-ENC-1' in html and 'TR-LOCAL-ENC-1' in html, 'Encrypted backup restore formats missing'
+          assert 'encrypted:true' in storage and 'ciphertext' in storage, 'Proof attachment encryption missing'
+          assert 'storageLocked' in storage and 'unlockAfterRestore' in storage, 'Encrypted-data recovery lock and restore-safe guard missing'
           assert 'await TRStorage.load()' in html, 'Encrypted storage async initialization missing'
           assert 'APP_PIN_ATTEMPTS_KEY' in html and 'getAppPinAttempts()>=5' in html, 'PIN attempt limit/recovery visibility missing'
           assert 'Create new 4–8 digit PIN' in html and 'Create a new recovery code' in html, 'Recovery must replace PIN and recovery code'
