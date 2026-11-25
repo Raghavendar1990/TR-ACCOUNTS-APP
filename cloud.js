@@ -4,13 +4,13 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChang
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp, runTransaction, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
-const btn=document.getElementById("cloudSetup"),notice=document.getElementById("moduleNotice");
+const btn=document.getElementById("cloudSetup"),notice=document.getElementById("moduleNotice");document.getElementById("profileGmailLogin")?.addEventListener("click",()=>btn?.click());
 const loginGate=document.getElementById("trLoginGate"),loginStatus=document.getElementById("trLoginStatus"),googleLoginBtn=document.getElementById("trGoogleLogin");function loginMsg(s){if(loginStatus)loginStatus.textContent=s;}function showLoginGate(show){if(loginGate)loginGate.style.display=show?"flex":"none";if(show){document.querySelector(".app").style.display="none";document.querySelector(".nav").style.display="none";}}
 
 const missing=!firebaseConfig||Object.values(firebaseConfig).some(v=>!v||String(v).includes("YOUR_"));
 let auth,db,currentUser=null,syncing=false,timer,lastCloudJSON=null,conflictPaused=false,authReadyResolve,authReady=new Promise(resolve=>authReadyResolve=resolve);
 async function waitForAuthUser(timeout=5000){if(auth?.currentUser)return auth.currentUser;await Promise.race([authReady,new Promise(resolve=>setTimeout(resolve,timeout))]);return auth?.currentUser||currentUser||null;}
-function status(msg){if(notice)notice.textContent=msg;if(btn)btn.textContent=currentUser?"Gmail Logout":"Gmail Login";}
+function status(msg){if(notice)notice.textContent=msg;if(btn)btn.textContent=currentUser?"Gmail Logout":"Gmail Login";const ps=document.getElementById("profileGmailStatus"),pb=document.getElementById("profileGmailLogin");if(ps)ps.textContent=currentUser?(currentUser.email||"Gmail connected"):(msg||"Gmail not connected");if(pb)pb.textContent=currentUser?"📧 Gmail Logout":"📧 Gmail Login";}
 function jsonData(d){return JSON.stringify(d||{});}
 window.TRAccountsLogout=async()=>{if(!auth)throw new Error("Authentication is not initialized.");if(auth.currentUser)await signOut(auth);currentUser=null;status("Logged out. Local account data is kept on this device.");return true;};
 
