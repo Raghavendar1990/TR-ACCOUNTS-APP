@@ -50,6 +50,7 @@ jobs:
                   v = v.replace(marker, marker + chr(10) + "    rgcfaIncludeGoogle = true" + chr(10) + "    androidxCredentialsVersion = '1.3.0'", 1)
                   variables.write_text(v)
           PY
+          python3 -m pip install Pillow
           python3 - <<'PY'
           from PIL import Image
           from pathlib import Path
