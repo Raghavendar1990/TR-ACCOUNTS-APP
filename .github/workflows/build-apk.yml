@@ -119,5 +119,5 @@ jobs:
       - uses: actions/upload-artifact@v5
         with:
           name: TR-Accounts-v2.0.6-Purple-Cyan-Theme
-          path: verified/TR-Accounts-v2.0.5.apk
+          path: verified/TR-Accounts-v2.0.6.apk
           retention-days: 30
