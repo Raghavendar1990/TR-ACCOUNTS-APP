@@ -1,138 +1,23 @@
-/* TR Accounts local persistence layer.
-   Data stays on this device/browser. Cloud sync is handled by cloud.js.
-   Proof attachments are stored separately in IndexedDB to keep ledger data lightweight. */
+/* TR Accounts local persistence: automatic AES-256-GCM encryption, device-held key, and encrypted proof files. */
 (() => {
   "use strict";
-  const KEY = "tr_accounts_data_v1";
-  const BACKUP_KEY = "tr_accounts_data_backup_v1";
-  const DEFAULTS = {
-    people: [], transactions: [], recycleBin: [], businesses: [],
-    businessTransactions: [], partners: [], partnerRecords: [],
-    pinHash: "", recoveryHash: "", language: "en", theme: "dark"
-  };
-
-  function load() {
-    const parseStore = raw => {
-      if (!raw) return null;
-      try { const parsed=JSON.parse(raw); return parsed && typeof parsed === "object" ? parsed : null; }
-      catch { return null; }
-    };
-    let primary=parseStore(localStorage.getItem(KEY));
-    let backup=parseStore(localStorage.getItem(BACKUP_KEY));
-    const populated=data=>!!data&&((Array.isArray(data.people)&&data.people.length)||(Array.isArray(data.transactions)&&data.transactions.length)||(Array.isArray(data.recycleBin)&&data.recycleBin.length)||(Array.isArray(data.businesses)&&data.businesses.length)||(Array.isArray(data.businessTransactions)&&data.businessTransactions.length)||(Array.isArray(data.partners)&&data.partners.length)||(Array.isArray(data.partnerRecords)&&data.partnerRecords.length)||(data.pinHash||data.recoveryHash));
-    let parsed=primary;
-    // Recover a populated backup when the primary store is valid but unexpectedly empty.
-    if(primary&&!populated(primary)&&backup&&populated(backup)) parsed=backup;
-    if(!parsed) parsed=backup;
-    if(!parsed) return { ...DEFAULTS };
-    return {
-      people: Array.isArray(parsed.people) ? parsed.people : [],
-      transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
-      recycleBin: Array.isArray(parsed.recycleBin) ? parsed.recycleBin : [],
-      businesses: Array.isArray(parsed.businesses) ? parsed.businesses : [],
-      businessTransactions: Array.isArray(parsed.businessTransactions) ? parsed.businessTransactions : [],
-      partners: Array.isArray(parsed.partners) ? parsed.partners : [],
-      partnerRecords: Array.isArray(parsed.partnerRecords) ? parsed.partnerRecords : [],
-      pinHash: typeof parsed.pinHash === "string" ? parsed.pinHash : "",
-      recoveryHash: typeof parsed.recoveryHash === "string" ? parsed.recoveryHash : "",
-      language: parsed.language === "te" ? "te" : "en",
-      theme: parsed.theme === "light" ? "light" : "dark"
-    };
-  }
-
-  function save(data) {
-    try {
-      const serialized = JSON.stringify({
-        people: Array.isArray(data.people) ? data.people : [],
-        transactions: Array.isArray(data.transactions) ? data.transactions : [],
-        recycleBin: Array.isArray(data.recycleBin) ? data.recycleBin : [],
-        businesses: Array.isArray(data.businesses) ? data.businesses : [],
-        businessTransactions: Array.isArray(data.businessTransactions) ? data.businessTransactions : [],
-        partners: Array.isArray(data.partners) ? data.partners : [],
-        partnerRecords: Array.isArray(data.partnerRecords) ? data.partnerRecords : [],
-        pinHash: typeof data.pinHash === "string" ? data.pinHash : "",
-        recoveryHash: typeof data.recoveryHash === "string" ? data.recoveryHash : "",
-        language: data.language === "te" ? "te" : "en",
-        theme: data.theme === "light" ? "light" : "dark",
-        updatedAt: new Date().toISOString()
-      });
-      localStorage.setItem(KEY, serialized);
-      localStorage.setItem(BACKUP_KEY, serialized);
-      return true;
-    } catch (error) {
-      console.warn("TR Accounts: local save failed", error);
-      return false;
-    }
-  }
-
-  const FILE_DB = "tr_accounts_files_v1";
-  const FILE_STORE = "proofs";
-  const MAX_PROOF_BYTES = 700 * 1024;
-  const ALLOWED_PROOF_TYPES = ["application/pdf"];
-
-  function fileDb() {
-    if (!window.indexedDB) return Promise.reject(new Error("IndexedDB is not supported on this device/browser."));
-    return new Promise((resolve, reject) => {
-      const req = indexedDB.open(FILE_DB, 1);
-      req.onupgradeneeded = () => {
-        const db = req.result;
-        if (!db.objectStoreNames.contains(FILE_STORE)) db.createObjectStore(FILE_STORE, { keyPath: "id" });
-      };
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error || new Error("Could not open proof storage."));
-      req.onblocked = () => reject(new Error("Proof storage upgrade is blocked by another open tab."));
-    });
-  }
-
-  function validateProof(id, file) {
-    if (!id || typeof id !== "string") throw new Error("Proof attachment ID is required.");
-    if (!file || typeof file.size !== "number") throw new Error("Select a proof file.");
-    if (file.size > MAX_PROOF_BYTES) throw new Error("Proof file must be 700 KB or smaller.");
-    const isImage = typeof file.type === "string" && file.type.startsWith("image/");
-    const isPdf = file.type === "application/pdf";
-    if (!isImage && !isPdf) throw new Error("Only image or PDF proof files are allowed.");
-  }
-
-  async function saveProof(id, file) {
-    validateProof(id, file);
-    const db = await fileDb();
-    return new Promise((resolve, reject) => {
-      let settled = false;
-      const tx = db.transaction(FILE_STORE, "readwrite");
-      tx.objectStore(FILE_STORE).put({
-        id, name: String(file.name || id), type: file.type || "application/octet-stream",
-        blob: file, size: file.size, createdAt: new Date().toISOString()
-      });
-      tx.oncomplete = () => { if (!settled) { settled = true; db.close(); resolve(true); } };
-      tx.onerror = () => { if (!settled) { settled = true; db.close(); reject(tx.error || new Error("Proof save failed.")); } };
-      tx.onabort = () => { if (!settled) { settled = true; db.close(); reject(tx.error || new Error("Proof save was cancelled.")); } };
-    });
-  }
-
-  async function getProof(id) {
-    if (!id) return null;
-    const db = await fileDb();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(FILE_STORE, "readonly");
-      const req = tx.objectStore(FILE_STORE).get(id);
-      req.onsuccess = () => { db.close(); resolve(req.result || null); };
-      req.onerror = () => { db.close(); reject(req.error || new Error("Proof read failed.")); };
-      tx.onabort = () => { db.close(); reject(tx.error || new Error("Proof read was cancelled.")); };
-    });
-  }
-
-  async function deleteProof(id) {
-    if (!id) return false;
-    const db = await fileDb();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(FILE_STORE, "readwrite");
-      tx.objectStore(FILE_STORE).delete(id);
-      tx.oncomplete = () => { db.close(); resolve(true); };
-      tx.onerror = () => { db.close(); reject(tx.error || new Error("Proof delete failed.")); };
-      tx.onabort = () => { db.close(); reject(tx.error || new Error("Proof delete was cancelled.")); };
-    });
-  }
-
-  window.TRStorage = { load, save };
-  window.TRFiles = { saveProof, getProof, deleteProof, maxProofBytes: MAX_PROOF_BYTES };
+  const KEY="tr_accounts_data_v1", BACKUP_KEY="tr_accounts_data_backup_v1";
+  const DEFAULTS={people:[],transactions:[],recycleBin:[],businesses:[],businessTransactions:[],partners:[],partnerRecords:[],pinHash:"",recoveryHash:"",language:"en",theme:"dark"};
+  const KEY_DB="tr_accounts_secure_keys_v1", KEY_STORE="keys", KEY_ID="device-data-key";
+  let cachedKeyPromise=null,saveQueue=Promise.resolve();
+  function keyDb(){return new Promise((resolve,reject)=>{const req=indexedDB.open(KEY_DB,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(KEY_STORE))req.result.createObjectStore(KEY_STORE);};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
+  async function getKey(){if(cachedKeyPromise)return cachedKeyPromise;cachedKeyPromise=(async()=>{const db=await keyDb();let key=await new Promise((resolve,reject)=>{const tx=db.transaction(KEY_STORE,"readonly"),r=tx.objectStore(KEY_STORE).get(KEY_ID);r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error);});if(!key){key=await crypto.subtle.generateKey({name:"AES-GCM",length:256},false,["encrypt","decrypt"]);await new Promise((resolve,reject)=>{const tx=db.transaction(KEY_STORE,"readwrite");tx.objectStore(KEY_STORE).put(key,KEY_ID);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});}db.close();return key;})();return cachedKeyPromise;}
+  const b64=b=>{let s="";for(const v of b)s+=String.fromCharCode(v);return btoa(s);},unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+  async function encryptObject(obj){const key=await getKey(),iv=crypto.getRandomValues(new Uint8Array(12)),bytes=new TextEncoder().encode(JSON.stringify(obj)),cipher=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,bytes);return {format:"TR-LOCAL-ENC-1",alg:"AES-GCM-256",iv:b64(iv),ciphertext:b64(new Uint8Array(cipher))};}
+  async function decryptObject(envelope){if(!envelope||envelope.format!=="TR-LOCAL-ENC-1")return envelope;const key=await getKey(),plain=await crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(envelope.iv)},key,unb64(envelope.ciphertext));return JSON.parse(new TextDecoder().decode(plain));}
+  async function load(){const read=async raw=>{if(!raw)return null;try{return await decryptObject(JSON.parse(raw));}catch(e){console.warn("TR Accounts encrypted local data read failed",e);return null;}};let primary=await read(localStorage.getItem(KEY)),backup=await read(localStorage.getItem(BACKUP_KEY));const populated=d=>!!d&&((d.people?.length)||(d.transactions?.length)||(d.recycleBin?.length)||(d.businesses?.length)||(d.businessTransactions?.length)||(d.partners?.length)||(d.partnerRecords?.length)||d.pinHash||d.recoveryHash);let data=primary;if(primary&&!populated(primary)&&backup&&populated(backup))data=backup;if(!data)data=backup;if(!data){const legacy=(()=>{try{return JSON.parse(localStorage.getItem(KEY)||"null")}catch{return null}})();if(legacy&&legacy.format!=="TR-LOCAL-ENC-1"){data=legacy;await save(data);}}if(!data)return {...DEFAULTS};return {...DEFAULTS,...data,people:Array.isArray(data.people)?data.people:[],transactions:Array.isArray(data.transactions)?data.transactions:[],recycleBin:Array.isArray(data.recycleBin)?data.recycleBin:[],businesses:Array.isArray(data.businesses)?data.businesses:[],businessTransactions:Array.isArray(data.businessTransactions)?data.businessTransactions:[],partners:Array.isArray(data.partners)?data.partners:[],partnerRecords:Array.isArray(data.partnerRecords)?data.partnerRecords:[]};}
+  function save(data){saveQueue=saveQueue.then(async()=>{const clean={...DEFAULTS,...data,updatedAt:new Date().toISOString()};const encrypted=JSON.stringify(await encryptObject(clean));localStorage.setItem(KEY,encrypted);localStorage.setItem(BACKUP_KEY,encrypted);return true;}).catch(error=>{console.warn("TR Accounts encrypted local save failed",error);return false;});return saveQueue;}
+  const FILE_DB="tr_accounts_files_v1",FILE_STORE="proofs",MAX_PROOF_BYTES=700*1024,ALLOWED_PROOF_TYPES=["application/pdf"];
+  function fileDb(){if(!window.indexedDB)return Promise.reject(new Error("IndexedDB not supported"));return new Promise((resolve,reject)=>{const req=indexedDB.open(FILE_DB,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(FILE_STORE))req.result.createObjectStore(FILE_STORE,{keyPath:"id"});};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);req.onblocked=()=>reject(new Error("Proof storage upgrade blocked"));});}
+  function validateProof(id,file){if(!id||typeof id!=="string")throw new Error("Proof ID required");if(!file||typeof file.size!=="number")throw new Error("Select a proof file");if(file.size>MAX_PROOF_BYTES)throw new Error("Proof file must be 700 KB or smaller");if(!(file.type?.startsWith("image/")||file.type==="application/pdf"))throw new Error("Only image or PDF proofs allowed");}
+  async function saveProof(id,file){validateProof(id,file);const key=await getKey(),iv=crypto.getRandomValues(new Uint8Array(12)),raw=new Uint8Array(await file.arrayBuffer()),cipher=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,raw),db=await fileDb();return new Promise((resolve,reject)=>{const tx=db.transaction(FILE_STORE,"readwrite");tx.objectStore(FILE_STORE).put({id,name:String(file.name||id),type:file.type||"application/octet-stream",encrypted:true,iv:b64(iv),ciphertext:b64(new Uint8Array(cipher)),size:file.size,createdAt:new Date().toISOString()});tx.oncomplete=()=>{db.close();resolve(true);};tx.onerror=()=>{db.close();reject(tx.error);};tx.onabort=()=>{db.close();reject(tx.error);};});}
+  async function getProof(id){if(!id)return null;const db=await fileDb(),item=await new Promise((resolve,reject)=>{const tx=db.transaction(FILE_STORE,"readonly"),r=tx.objectStore(FILE_STORE).get(id);r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error);});db.close();if(!item)return null;if(!item.encrypted)return item;const key=await getKey(),plain=await crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(item.iv)},key,unb64(item.ciphertext)),blob=new Blob([plain],{type:item.type});return {...item,blob};}
+  async function deleteProof(id){if(!id)return false;const db=await fileDb();return new Promise((resolve,reject)=>{const tx=db.transaction(FILE_STORE,"readwrite");tx.objectStore(FILE_STORE).delete(id);tx.oncomplete=()=>{db.close();resolve(true);};tx.onerror=()=>{db.close();reject(tx.error);};tx.onabort=()=>{db.close();reject(tx.error);};});}
+  window.TRStorage={load,save,encryptObject,decryptObject};
+  window.TRFiles={saveProof,getProof,deleteProof,maxProofBytes:MAX_PROOF_BYTES};
 })();
