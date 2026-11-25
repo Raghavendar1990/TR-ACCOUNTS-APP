@@ -12,7 +12,9 @@ Mobile-first person-wise and business accounting app. This repository is an acti
 - Dashboard totals, person-wise ledgers, transaction add/edit, history filters, recycle-bin restore/delete
 - Person-wise statements with date filtering, opening balance, running balance, print/PDF, and WhatsApp sharing
 - Local JSON backup and restore; proof attachments and IndexedDB storage
-- Business ledgers, partner records, Business Suite, sales/invoices, purchases, inventory, customers, suppliers, expenses, payroll, cash/bank/UPI records, reports, CSV export, print/PDF
+- Business Mode with multiple businesses, separate business-filtered ledgers, sales, purchases, inventory, customers, suppliers, expenses, payroll, cash/bank/UPI, reports and per-business profile settings
+- Business profile: optional logo, two office phone numbers, address, GSTIN, editable details; details can be skipped during setup and completed later
+- A4 invoice print/PDF with business details, item-level GST rate entry, and optional digital signature (upload or draw; include/exclude on each invoice)
 - Telugu/English UI labels and dark/light themes
 - Local PIN hash and recovery-code flow; App Lock reveals recovery only after five failed PIN attempts, then requires replacement PIN and recovery code
 - Gmail/Google sign-in, same-Gmail owner access across devices, and Firestore cloud sync
