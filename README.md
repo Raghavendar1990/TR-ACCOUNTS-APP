@@ -10,7 +10,7 @@ Mobile-first person-wise and business accounting app. This repository is an acti
 - Telugu/English UI labels and dark/light themes
 - Local PIN hash and recovery-code flow; App Lock reveals recovery only after five failed PIN attempts, then requires replacement PIN and recovery code
 - Gmail/Google sign-in, same-Gmail owner access across devices, and Firestore cloud sync
-- Same-number Self-SMS check (Send Number = Receive Number) before Cloud Sync; Firebase Phone OTP is not used
+- Cloud Sync and Firestore ledger access require a Firebase-verified phone-number claim; local Self-SMS is not server authentication
 - Different-Gmail device access remains owner-approval based
 - PWA manifest, offline service-worker shell, Capacitor Android setup, and debug APK workflow
 
@@ -25,7 +25,7 @@ Mobile-first person-wise and business accounting app. This repository is an acti
 ## Data and safety
 Local app data is saved in browser/device storage. Proof attachments are stored in IndexedDB. Keep backups in a separate safe location and do not treat this prototype as the only financial record.
 
-Cloud sync requires Gmail/Google sign-in and the app's same-number Self-SMS check. The app prepares an SMS to the entered mobile; Send Number and Receive Number are the same. The user manually sends the SMS and enters the code. The app cannot automatically confirm SMS delivery, and this check is not cryptographic authentication. Firestore access is protected by the signed-in Google UID and owner-approved device UIDs. Publish updated Firestore rules and test sync/conflict/restore on two devices before using real financial records.
+Cloud sync and ledger writes are now blocked unless the Firebase ID token contains a verified phone-number claim matching the Profile phone, and Firestore rules independently enforce that claim for ledger sync entries. The local Self-SMS flow remains a device check only and cannot authorize cloud access. The app does not yet complete Firebase Phone Authentication to acquire the claim, so Cloud Sync intentionally remains locked until that sign-in flow and Firebase Phone provider configuration are implemented/enabled. Publish updated Firestore rules and test sync/conflict/restore on two devices before using real financial records.
 
 ## Firebase
 See [Firebase setup instructions](FIREBASE_SETUP.md). Enable Google sign-in and Firestore, then publish the updated `firestore.rules`. Same Gmail uses the same owner UID without approval; every device must complete the local Self-SMS check before Cloud Sync. Different Gmail remains owner-approval based.
