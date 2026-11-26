@@ -62,7 +62,7 @@ async function syncData(){
   const entries=entryMap(merged);await writeEntrySet(ref,merged);const verifiedCount=await verifyEntrySet(ref,entries,remoteDocs);
   lastCloudJSON=jsonData(merged);if(window.TRStorage?.autoBackup)await window.TRStorage.autoBackup(true);
   status("Cloud: sync verified — "+verifiedCount+" entries");return true;
- }catch(err){console.error("Cloud sync:",err);status("Cloud sync failed. Local data remains safe.");return false;}
+ }catch(err){console.error("Cloud sync:",err);status("Cloud sync failed ("+(err.code||"error")+"): "+(err.message||"Unknown error").slice(0,140)+" — local data remains safe.");return false;}
  finally{syncing=false;}
 }
 async function guardedUpload(){
@@ -75,7 +75,7 @@ async function guardedUpload(){
   await writeEntrySet(ref,local);const verifiedCount=await verifyEntrySet(ref,entries,beforeDocs);
   lastCloudJSON=jsonData(local);if(window.TRStorage?.autoBackup)await window.TRStorage.autoBackup(true);
   status("Cloud: upload verified — "+verifiedCount+" entries");return true;
- }catch(err){console.error("Entry sync:",err);status("Cloud sync failed. Local data is safe.");return false;}
+ }catch(err){console.error("Entry sync:",err);status("Cloud sync failed ("+(err.code||"error")+"): "+(err.message||"Unknown error").slice(0,140)+" — local data remains safe.");return false;}
  finally{syncing=false;}
 }
 document.getElementById("profileSave")?.addEventListener("click",async()=>{const p=profileFromFields(),email=auth?.currentUser?.email||document.getElementById("profileEmail")?.value||"";if(p.age&&!/^\d+$/.test(p.age)||Number(p.age)>120){profileStatus("Please enter a valid age.");return;}p.email=email;saveProfileLocal(p);const user=auth?.currentUser;if(user&&db){try{await setDoc(doc(db,"trAccountsUsers",user.uid),{profile:{name:p.name,phone:p.phone,phoneVerified:!!p.phoneVerified,dob:p.dob,age:p.age,gender:p.gender,email:user.email||""},profileUpdatedAt:serverTimestamp()},{merge:true});profileStatus("Profile saved to this device and Google account.");}catch(e){console.error(e);profileStatus("Saved locally. Cloud profile update failed.");}}else profileStatus("Profile saved on this device. Sign in to sync profile to Google.");});
