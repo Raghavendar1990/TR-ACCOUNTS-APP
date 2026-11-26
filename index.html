@@ -240,17 +240,17 @@ function refreshRecoveryVisibility(){const btn=document.getElementById("recovery
 const FINGERPRINT_PREF_KEY="tr_accounts_fingerprint_unlock_enabled_v1";
 async function initTRBiometric(){
  const toggle=document.getElementById("fingerprintUnlockEnabled"),statusEl=document.getElementById("fingerprintUnlockStatus"),btn=document.getElementById("biometricBtn");
- const plugin=window.Capacitor?.Plugins?.TRBiometric,enabled=localStorage.getItem(FINGERPRINT_PREF_KEY)==="1";
+ const plugin=window.Capacitor?.Plugins?.TRBiometric,storedEnabled=localStorage.getItem(FINGERPRINT_PREF_KEY)==="1",enabled=storedEnabled&&!!pinHash;if(storedEnabled&&!pinHash)localStorage.setItem(FINGERPRINT_PREF_KEY,"0");
  if(toggle)toggle.checked=enabled;
  if(!plugin){if(toggle)toggle.disabled=true;if(statusEl)statusEl.textContent="Fingerprint unlock is available in the Android app only. PIN fallback stays enabled.";if(btn)btn.style.display="none";return;}
  try{
   const availability=await plugin.isAvailable(),available=!!availability?.available;
   if(toggle)toggle.disabled=!available;
   if(!available){if(statusEl)statusEl.textContent="No enrolled fingerprint/biometric is available on this device. PIN remains the fallback.";if(btn)btn.style.display="none";return;}
-  if(statusEl)statusEl.textContent=enabled?"Fingerprint unlock is enabled. PIN remains available as fallback.":"Fingerprint unlock is disabled. Enable it here to use it on the lock screen.";
+  if(statusEl)statusEl.textContent=!pinHash?"Set App PIN first; fingerprint unlock will use it as the fallback.":enabled?"Fingerprint unlock is enabled. PIN remains available as fallback.":"Fingerprint unlock is disabled. Enable it here to use it on the lock screen.";
   if(btn)btn.style.display=enabled?"block":"none";
   if(btn)btn.onclick=async()=>{try{const result=await plugin.authenticate({reason:"Unlock TR Accounts"});if(result?.success)unlockApp();}catch(e){document.getElementById("pinError").textContent="Fingerprint failed or cancelled. Please use PIN."; }};
-  if(toggle)toggle.onchange=async()=>{const requested=!!toggle.checked;try{const check=await plugin.isAvailable();if(!check?.available){toggle.checked=false;localStorage.setItem(FINGERPRINT_PREF_KEY,"0");if(statusEl)statusEl.textContent="Fingerprint unavailable. PIN remains the fallback.";if(btn)btn.style.display="none";return;}localStorage.setItem(FINGERPRINT_PREF_KEY,requested?"1":"0");if(statusEl)statusEl.textContent=requested?"Fingerprint unlock is enabled. PIN remains available as fallback.":"Fingerprint unlock disabled. Use the PIN.";if(btn)btn.style.display=requested?"block":"none";}catch(e){toggle.checked=!requested;localStorage.setItem(FINGERPRINT_PREF_KEY,toggle.checked?"1":"0");if(statusEl)statusEl.textContent="Fingerprint setting could not be changed. PIN remains available.";if(btn)btn.style.display=toggle.checked?"block":"none";}};
+  if(toggle)toggle.onchange=async()=>{const requested=!!toggle.checked;if(requested&&!pinHash){toggle.checked=false;if(statusEl)statusEl.textContent="Set App PIN first; it is required as the fingerprint fallback.";return;}try{const check=await plugin.isAvailable();if(!check?.available){toggle.checked=false;localStorage.setItem(FINGERPRINT_PREF_KEY,"0");if(statusEl)statusEl.textContent="Fingerprint unavailable. PIN remains the fallback.";if(btn)btn.style.display="none";return;}localStorage.setItem(FINGERPRINT_PREF_KEY,requested?"1":"0");if(statusEl)statusEl.textContent=requested?"Fingerprint unlock is enabled. PIN remains available as fallback.":"Fingerprint unlock disabled. Use the PIN.";if(btn)btn.style.display=requested?"block":"none";}catch(e){toggle.checked=!requested;localStorage.setItem(FINGERPRINT_PREF_KEY,toggle.checked?"1":"0");if(statusEl)statusEl.textContent="Fingerprint setting could not be changed. PIN remains available.";if(btn)btn.style.display=toggle.checked?"block":"none";}};
  }catch(e){if(toggle)toggle.disabled=true;if(statusEl)statusEl.textContent="Fingerprint service unavailable. PIN remains the fallback.";if(btn)btn.style.display="none";}
 }
 initTRBiometric();

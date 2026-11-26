@@ -60,6 +60,7 @@ jobs:
           assert 'TRSmsPlugin' not in build_workflow and 'SEND_SMS' not in build_workflow and 'RECEIVE_SMS' not in build_workflow and 'READ_PHONE_STATE' not in build_workflow, 'APK must not add SMS or phone-state permissions'
           assert 'sync-conflict-' in cloud and 'syncConflict:true' in cloud, 'Sync conflict preservation missing'
           assert 'fingerprintUnlockEnabled' in html and 'tr_accounts_fingerprint_unlock_enabled_v1' in html and 'initTRBiometric' in html, 'Fingerprint unlock setting and persistent preference missing'
+          assert 'Set App PIN first' in html and 'requested&&!pinHash' in html, 'Fingerprint must require App PIN fallback before enabling'
           assert 'modePinSkip' in html and 'Skip PIN & Switch' in html and 'switchPinSkip' in html, 'Optional Personal/Business Switching PIN Skip/Disable flow missing'
           assert 'profileGmailStatusCard' not in html and 'id="profileLogout"' not in html, 'Profile must show Gmail email once and keep a single visible Login/Logout button'
           assert 'verifyEntrySet' in cloud and 'Cloud: sync verified' in cloud and 'await syncData();' in cloud, 'Cloud Sync must perform full merge and read-back verification'
