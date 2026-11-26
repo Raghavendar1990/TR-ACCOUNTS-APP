@@ -129,7 +129,7 @@ jobs:
           p=Path('android/app/build.gradle')
           s=p.read_text()
           if 'androidx.biometric:biometric' not in s:
-            s=s.replace('dependencies {', "dependencies {" + chr(10) + "    implementation 'androidx.biometric:biometric:1.2.0' ",1)
+            s=s.replace('dependencies {', "dependencies {" + chr(10) + "    implementation 'androidx.biometric:biometric:1.1.0' ",1)
             p.write_text(s)
           PY
           python3 -m pip install Pillow
