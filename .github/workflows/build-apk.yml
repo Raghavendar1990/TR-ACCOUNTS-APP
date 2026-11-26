@@ -60,12 +60,35 @@ jobs:
             @PluginMethod public void secureDecrypt(PluginCall call){try{String iv=call.getString("iv"),ciphertext=call.getString("ciphertext");boolean isBase64=call.getBoolean("isBase64",false);if(iv==null||ciphertext==null){call.reject("Missing IV or ciphertext");return;}Cipher cipher=Cipher.getInstance("AES/GCM/NoPadding");cipher.init(Cipher.DECRYPT_MODE,getKey(),new GCMParameterSpec(128,Base64.decode(iv,Base64.DEFAULT)));byte[] plain=cipher.doFinal(Base64.decode(ciphertext,Base64.DEFAULT));String result=isBase64?Base64.encodeToString(plain,Base64.NO_WRAP):new String(plain,StandardCharsets.UTF_8);call.resolve(new JSObject().put("data",result));}catch(Exception e){call.reject("Keystore decryption failed: "+e.getMessage(),e);}}
           }
           """ % pkg)
+          biometric=root/'java'/Path(*pkg.split('.'))/'TRBiometricPlugin.java'
+          biometric.write_text("""package %s;
+          import android.content.Context; import android.os.Build; import androidx.biometric.BiometricManager; import androidx.biometric.BiometricPrompt; import androidx.core.content.ContextCompat; import com.getcapacitor.*; import com.getcapacitor.annotation.*; import java.util.concurrent.Executor;
+          @CapacitorPlugin(name="TRBiometric")
+          public class TRBiometricPlugin extends Plugin {
+            @PluginMethod public void isAvailable(PluginCall call){
+              BiometricManager bm=BiometricManager.from(getContext());
+              int status=bm.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG);
+              call.resolve(new JSObject().put("available",status==BiometricManager.BIOMETRIC_SUCCESS));
+            }
+            @PluginMethod public void authenticate(PluginCall call){
+              String reason=call.getString("reason","Unlock TR Accounts");
+              Executor executor=ContextCompat.getMainExecutor(getContext());
+              BiometricPrompt prompt=new BiometricPrompt(getActivity(),executor,new BiometricPrompt.AuthenticationCallback(){
+                @Override public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result){call.resolve(new JSObject().put("success",true));}
+                @Override public void onAuthenticationError(int code,CharSequence msg){call.reject(msg==null?"Biometric authentication cancelled":msg.toString());}
+                @Override public void onAuthenticationFailed(){notifyListeners("biometricFailed",new JSObject());}
+              });
+              BiometricPrompt.PromptInfo info=new BiometricPrompt.PromptInfo.Builder().setTitle("TR Accounts").setSubtitle(reason).setNegativeButtonText("Use PIN").build();
+              prompt.authenticate(info);
+            }
+          }
+          """ % pkg)
           text=main.read_text()
           if 'TRSmsPlugin' not in text:
             if main.suffix=='.java':
-              text=text.replace('public class MainActivity extends BridgeActivity {', 'public class MainActivity extends BridgeActivity {\n    @Override public void onCreate(android.os.Bundle savedInstanceState) {\n        registerPlugin(TRSmsPlugin.class);\n        registerPlugin(TRSecurePlugin.class);\n        super.onCreate(savedInstanceState);\n    }')
+              text=text.replace('public class MainActivity extends BridgeActivity {', 'public class MainActivity extends BridgeActivity {\n    @Override public void onCreate(android.os.Bundle savedInstanceState) {\n        registerPlugin(TRSmsPlugin.class);\n        registerPlugin(TRSecurePlugin.class);\n        registerPlugin(TRBiometricPlugin.class);\n        super.onCreate(savedInstanceState);\n    }')
             else:
-              text=text.replace('class MainActivity : BridgeActivity() {', 'class MainActivity : BridgeActivity() {\n    override fun onCreate(savedInstanceState: android.os.Bundle?) {\n        registerPlugin(TRSmsPlugin::class.java)\n        registerPlugin(TRSecurePlugin::class.java)\n        super.onCreate(savedInstanceState)\n    }')
+              text=text.replace('class MainActivity : BridgeActivity() {', 'class MainActivity : BridgeActivity() {\n    override fun onCreate(savedInstanceState: android.os.Bundle?) {\n        registerPlugin(TRSmsPlugin::class.java)\n        registerPlugin(TRSecurePlugin::class.java)\n        registerPlugin(TRBiometricPlugin::class.java)\n        super.onCreate(savedInstanceState)\n    }')
             main.write_text(text)
           manifest=root/'AndroidManifest.xml'; m=manifest.read_text()
           m=m.replace('<manifest ', '<manifest\n    xmlns:tools="http://schemas.android.com/tools" ',1) if 'xmlns:tools' not in m else m
@@ -101,6 +124,14 @@ jobs:
                   variables.write_text(v)
           PY
           npx cap sync android
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('android/app/build.gradle')
+          s=p.read_text()
+          if 'androidx.biometric:biometric' not in s:
+            s=s.replace('dependencies {', "dependencies {\\n    implementation 'androidx.biometric:biometric:1.2.0' ",1)
+            p.write_text(s)
+          PY
           python3 -m pip install Pillow
           python3 - <<'PY'
           from PIL import Image
