@@ -191,7 +191,7 @@ jobs:
               p.write_text(s)
           PY
       - name: Set Android app version
-        run: sed -i -E 's/versionCode [0-9]+/versionCode 28/; s/versionName "[^"]+"/versionName "2.1.0"/' android/app/build.gradle
+        run: sed -i -E 's/versionCode [0-9]+/versionCode 28/; s/versionName "[^"]+"/versionName "1.0"/' android/app/build.gradle
       - name: Configure Maven mirrors and dependency fallback
         run: |
           cat > gradle-mirror.init.gradle <<'GRADLE'
@@ -232,17 +232,17 @@ jobs:
           "$AAPT" dump badging "$APK" | grep -q "application-icon"
           unzip -l "$APK" | grep -q "res/mipmap-.*ic_launcher"
           mkdir -p verified
-          cp "$APK" verified/TR-Accounts-v2.1.0.apk
+          cp "$APK" verified/TR-Accounts-v1.0.apk
           rm -f android/app/keystore/tr-accounts-release.jks
       - uses: actions/upload-artifact@v5
         with:
           name: TR-Accounts-v2.1.0-APK
-          path: verified/TR-Accounts-v2.1.0.apk
+          path: verified/TR-Accounts-v1.0.apk
       - name: Publish permanent APK release asset
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-build-${{ github.run_number }}
           name: TR Accounts APK build ${{ github.run_number }}
-          files: verified/TR-Accounts-v2.1.0.apk
+          files: verified/TR-Accounts-v1.0.apk
           draft: false
           prerelease: false
