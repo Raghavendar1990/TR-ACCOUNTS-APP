@@ -28,8 +28,11 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           root=Path('android/app/src/main')
-          pkg='com.traccounts.app'
-          main=root/'java'/Path(*pkg.split('.'))/'MainActivity.java'
+          import json
+          pkg=json.loads(Path('capacitor.config.json').read_text()).get('appId','com.traccounts.app')
+          java_root=root/'java'
+          candidates=list(java_root.rglob('MainActivity.java'))+list(java_root.rglob('MainActivity.kt'))
+          main=candidates[0] if candidates else java_root/Path(*pkg.split('.'))/'MainActivity.java'
           main.parent.mkdir(parents=True,exist_ok=True)
           secure=root/'java'/Path(*pkg.split('.'))/'TRSecurePlugin.java'
           secure.write_text("""package %s;
