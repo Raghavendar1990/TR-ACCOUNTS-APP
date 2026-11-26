@@ -311,8 +311,11 @@ document.addEventListener("click",async e =>{
   (async()=>{
     const regKey="tr_accounts_registration_v1",profileKey="tr_accounts_profile_v1";
     let reg=null,profile=null;
+    const pref=window.Capacitor?.Plugins?.Preferences;
     try{reg=JSON.parse(localStorage.getItem(regKey)||"null");}catch{}
+    if(!reg&&pref){try{const r=await pref.get({key:regKey});if(r?.value)reg=JSON.parse(r.value);}catch(e){console.warn("Profile registration Preferences read failed",e);}}
     try{profile=JSON.parse(localStorage.getItem(profileKey)||"null");}catch{}
+    if(!profile&&pref){try{const r=await pref.get({key:profileKey});if(r?.value)profile=JSON.parse(r.value);}catch(e){console.warn("Profile Preferences read failed",e);}}
     const data=profile||reg||{};
     if(data.name)document.getElementById("profileName").value=data.name;
     if(data.phone)document.getElementById("profilePhone").value=data.phone;
@@ -322,7 +325,7 @@ document.addEventListener("click",async e =>{
     document.getElementById("profileSave").onclick=async()=>{
       const updated={name:document.getElementById("profileName").value.trim(),phone:document.getElementById("profilePhone").value.trim(),dob:dobInput.value,gender:document.getElementById("profileGender").value,email:document.getElementById("profileEmail").value||"",updatedAt:new Date().toISOString()};
       if(!updated.name||!/^[6-9][0-9]{9}$/.test(updated.phone)||!updated.dob||!updated.gender){alert("Name, valid 10-digit phone, DOB and gender are required.");return;}
-      try{localStorage.setItem(profileKey,JSON.stringify(updated));const savedReg={...(reg||{}),completed:true,name:updated.name,phone:updated.phone,dob:updated.dob,gender:updated.gender};localStorage.setItem(regKey,JSON.stringify(savedReg));const pref=window.Capacitor?.Plugins?.Preferences;if(pref)await pref.set({key:regKey,value:JSON.stringify(savedReg)});document.getElementById("profileStatus").textContent="Profile saved successfully.";alert("Profile saved.");}
+      try{localStorage.setItem(profileKey,JSON.stringify(updated));const savedReg={...(reg||{}),completed:true,name:updated.name,phone:updated.phone,dob:updated.dob,gender:updated.gender};localStorage.setItem(regKey,JSON.stringify(savedReg));if(pref){await pref.set({key:regKey,value:JSON.stringify(savedReg)});await pref.set({key:profileKey,value:JSON.stringify(updated)});}document.getElementById("profileStatus").textContent="Profile saved successfully.";alert("Profile saved.");}
       catch(err){document.getElementById("profileStatus").textContent="Save failed: "+(err.message||err);}
     };
   })();
