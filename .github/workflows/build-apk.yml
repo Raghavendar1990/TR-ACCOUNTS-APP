@@ -236,7 +236,7 @@ jobs:
           rm -f android/app/keystore/tr-accounts-release.jks
       - uses: actions/upload-artifact@v5
         with:
-          name: TR-Accounts-v2.1.0-APK
+          name: TR-Accounts-v1.0-APK
           path: verified/TR-Accounts-v1.0.apk
       - name: Publish permanent APK release asset
         uses: softprops/action-gh-release@v2
