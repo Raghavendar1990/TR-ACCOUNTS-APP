@@ -25,6 +25,12 @@ jobs:
         run: |
           npx cap add android
           cp google-services.json android/app/google-services.json
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('android/app/src/main')
+          pkg='com.traccounts.app'
+          main=root/'java'/Path(*pkg.split('.'))/'MainActivity.java'
+          main.parent.mkdir(parents=True,exist_ok=True)
           secure=root/'java'/Path(*pkg.split('.'))/'TRSecurePlugin.java'
           secure.write_text("""package %s;
           import android.security.keystore.KeyGenParameterSpec; import android.security.keystore.KeyProperties; import android.util.Base64; import java.nio.charset.StandardCharsets; import java.security.KeyStore; import javax.crypto.Cipher; import javax.crypto.KeyGenerator; import javax.crypto.SecretKey; import javax.crypto.spec.GCMParameterSpec; import com.getcapacitor.*; import com.getcapacitor.annotation.*;
