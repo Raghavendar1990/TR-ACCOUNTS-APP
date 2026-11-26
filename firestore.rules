@@ -6,7 +6,7 @@ service cloud.firestore {
     function approvedDevice(uid) {
       return signedIn()
         && exists(/databases/$(database)/documents/trAccountsUsers/$(uid))
-        && request.auth.uid in get(/databases/$(database)/documents/trAccountsUsers/$(uid)).data.approvedDevices;
+        && request.auth.uid in get(/databases/$(database)/documents/trAccountsUsers/$(uid)).data.get("approvedDevices", []);
     }
 
     match /trAccountsUsers/{uid} {
