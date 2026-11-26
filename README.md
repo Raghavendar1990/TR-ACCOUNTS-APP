@@ -39,7 +39,7 @@ Cloud Sync uses Gmail/Firebase Auth UID plus same-number Self-SMS verification o
 See [Firebase setup instructions](FIREBASE_SETUP.md). Enable Google sign-in and Firestore, then publish the updated `firestore.rules`. Same Gmail uses the same owner UID; the app's Self-SMS is a local verification gate. Different Gmail remains owner-approval based.
 
 ## Debug APK
-The GitHub Actions workflow builds v2.1.0 and verifies APK signature/package metadata. Each build is published as a GitHub Release APK asset intended to remain available unless manually deleted. Stable signing secrets are optional; without them, the APK uses Android debug signing and must not be treated as a production release.
+The GitHub Actions workflow builds v1.0 and verifies APK signature/package metadata. Each build is published as a GitHub Release APK asset intended to remain available unless manually deleted. Stable signing secrets are optional; without them, the APK uses Android debug signing and must not be treated as a production release.
 
 ## Validation
 Validation and build/deploy workflows must be reviewed in GitHub Actions after each relevant commit. No real-device or live Firebase verification is claimed.
