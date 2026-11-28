@@ -244,6 +244,12 @@ jobs:
           "$AAPT" dump badging "$APK" | grep -q "application-icon"
           unzip -l "$APK" | grep -q "res/mipmap-.*ic_launcher"
           mkdir -p verified
+          # Dump final merged permissions and block unused high-risk permissions.
+          "$AAPT" dump permissions "$APK" | tee verified/permissions.txt
+          if grep -E 'android.permission.(SEND_SMS|RECEIVE_SMS|READ_SMS|WRITE_SMS|READ_PHONE_STATE|READ_PHONE_NUMBERS|CALL_PHONE|READ_CALL_LOG|WRITE_CALL_LOG|READ_CONTACTS|WRITE_CONTACTS|ACCESS_FINE_LOCATION|ACCESS_COARSE_LOCATION|CAMERA|RECORD_AUDIO|MANAGE_EXTERNAL_STORAGE|REQUEST_INSTALL_PACKAGES|READ_MEDIA_IMAGES|READ_MEDIA_VIDEO|READ_MEDIA_AUDIO)' verified/permissions.txt; then
+            echo "Unexpected sensitive permission in APK manifest; review and remove or justify before publishing."
+            exit 1
+          fi
           cp "$APK" verified/TR-Accounts-v1.0.apk
           rm -f android/app/keystore/tr-accounts-release.jks
       - uses: actions/upload-artifact@v6
