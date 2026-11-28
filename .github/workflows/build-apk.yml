@@ -251,7 +251,7 @@ jobs:
           name: TR-Accounts-v1.0-APK
           path: verified/TR-Accounts-v1.0.apk
       - name: Publish permanent APK release asset
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3.0.4
         with:
           tag_name: apk-build-${{ github.run_number }}
           name: TR Accounts APK build ${{ github.run_number }}
