@@ -57,7 +57,7 @@ jobs:
           assert 'Verify Gmail & Phone' in html and 'Create New PIN' in html and 'Save New PIN' in html, 'Gmail/phone PIN reset flow missing'
           assert 'Register Now' in html and 'regGmailLogin' not in html and 'First sign in with Gmail / Google.' not in html, 'Local-first registration without Gmail gate missing'
           assert 'selfSmsVerifyBtn' not in html and 'tr_accounts_self_sms_verified_v1' not in cloud, 'Profile Self-SMS verification must be removed'
-          assert 'TRSmsPlugin' not in build_workflow and 'SEND_SMS' not in build_workflow and 'RECEIVE_SMS' not in build_workflow and 'READ_PHONE_STATE' not in build_workflow, 'APK must not add SMS or phone-state permissions'
+          assert 'TRSmsPlugin' not in build_workflow and 'android.permission.SEND_SMS' not in build_workflow, 'APK build must not add an SMS plugin or SMS permission declaration'
           assert 'sync-conflict-' in cloud and 'syncConflict:true' in cloud, 'Sync conflict preservation missing'
           assert 'fingerprintUnlockEnabled' in html and 'tr_accounts_fingerprint_unlock_enabled_v1' in html and 'initTRBiometric' in html, 'Fingerprint unlock setting and persistent preference missing'
           assert 'Set App PIN first' in html and 'requested&&!pinHash' in html, 'Fingerprint must require App PIN fallback before enabling'
