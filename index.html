@@ -285,12 +285,12 @@ document.getElementById("restoreFile").addEventListener("change",async e =>{cons
  window.currentStatementText="TR ACCOUNTS — BANK STATEMENT\nPerson: "+person+"\nPeriod: "+(from||"Beginning")+" to "+(to||"Present")+"\nGenerated: "+new Date().toLocaleString()+"\n\nOpening Balance: "+money(opening)+"\n\nDATE | DESCRIPTION | TYPE | AMOUNT | PAYMENT | RUNNING BALANCE\n"+(textRows.join("\n")||"(No transactions in selected period)")+"\n\nTotal Income: "+money(inc)+"\nTotal Expense: "+money(exp)+"\nClosing Balance: "+money(balance);
 }
 function statementPdfBytes(text){
- const ascii=String(text||"").replace(/₹/g,"INR ").replace(/[—–−•]/g,"-").replace(/[“”]/g,'"').replace(/[‘’]/g,"'").replace(/[^\\x09\\x0A\\x0D\\x20-\\x7E]/g,"?");
- const lines=[];ascii.split(/\\r?\\n/).forEach(line=>{let s=line;while(s.length>88){lines.push(s.slice(0,88));s=s.slice(88);}lines.push(s);});
+ const ascii=String(text||"").replace(/₹/g,"INR ").replace(/[—–−•]/g,"-").replace(/[“”]/g,'"').replace(/[‘’]/g,"'").replace(/[^\x09\x0A\x0D\x20-\x7E]/g,"?");
+ const lines=[];ascii.split(/\r?\n/).forEach(line=>{let s=line;while(s.length>88){lines.push(s.slice(0,88));s=s.slice(88);}lines.push(s);});
  const pageLines=[];for(let i=0;i<lines.length;i+=48)pageLines.push(lines.slice(i,i+48));if(!pageLines.length)pageLines.push([]);
  const objects=[];objects.push("<< /Type /Catalog /Pages 2 0 R >>");objects.push("<< /Type /Pages /Kids ["+pageLines.map((_,i)=>(4+i*2)+" 0 R").join(" ")+"] /Count "+pageLines.length+" >>");objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
- pageLines.forEach((page,i)=>{const pageObj=4+i*2,streamObj=pageObj+1;let stream="BT /F1 10 Tf 48 790 Td 14 TL ";page.forEach((line,j)=>{if(j)stream+="T* ";stream+="("+line.replace(/\\\\/g,"\\\\\\\\").replace(/\\(/g,"\\\\(").replace(/\\)/g,"\\\\)")+") Tj ";});stream+="ET";objects.push("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents "+streamObj+" 0 R >>");objects.push("<< /Length "+stream.length+" >>\\nstream\\n"+stream+"\\nendstream");});
- let pdf="%PDF-1.4\\n";const offsets=[0];objects.forEach((obj,i)=>{offsets.push(pdf.length);pdf+=(i+1)+" 0 obj\\n"+obj+"\\nendobj\\n";});const xref=pdf.length;pdf+="xref\\n0 "+(objects.length+1)+"\\n0000000000 65535 f \\n";offsets.slice(1).forEach(o=>pdf+=String(o).padStart(10,"0")+" 00000 n \\n");pdf+="trailer\\n<< /Size "+(objects.length+1)+" /Root 1 0 R >>\\nstartxref\\n"+xref+"\\n%%EOF";return new TextEncoder().encode(pdf);
+ pageLines.forEach((page,i)=>{const pageObj=4+i*2,streamObj=pageObj+1;let stream="BT /F1 10 Tf 48 790 Td 14 TL ";page.forEach((line,j)=>{if(j)stream+="T* ";stream+="("+line.replace(/\\/g,"\\\\").replace(/\(/g,"\\(").replace(/\)/g,"\\)")+") Tj ";});stream+="ET";objects.push("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents "+streamObj+" 0 R >>");objects.push("<< /Length "+stream.length+" >>\nstream\n"+stream+"\nendstream");});
+ let pdf="%PDF-1.4\n";const offsets=[0];objects.forEach((obj,i)=>{offsets.push(pdf.length);pdf+=(i+1)+" 0 obj\n"+obj+"\nendobj\n";});const xref=pdf.length;pdf+="xref\n0 "+(objects.length+1)+"\n0000000000 65535 f \n";offsets.slice(1).forEach(o=>pdf+=String(o).padStart(10,"0")+" 00000 n \n");pdf+="trailer\n<< /Size "+(objects.length+1)+" /Root 1 0 R >>\nstartxref\n"+xref+"\n%%EOF";return new TextEncoder().encode(pdf);
 }
 function makeStatementPdfFile(){
  const text=window.currentStatementText||"";if(!text)return null;
@@ -299,7 +299,7 @@ function makeStatementPdfFile(){
 }
 async function shareStatementPdf({title,text,recipient=""}={}){
  const file=makeStatementPdfFile();if(!file){alert("Generate the statement first.");return false;}
- const shareText=(recipient?"To: "+recipient+"\\n":"")+text;
+ const shareText=(recipient?"To: "+recipient+"\n":"")+text;
  try{
   if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
    await navigator.share({title:title||file.name,text:shareText,files:[file]});return true;
