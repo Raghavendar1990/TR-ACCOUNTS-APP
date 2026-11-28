@@ -246,7 +246,7 @@ jobs:
           mkdir -p verified
           cp "$APK" verified/TR-Accounts-v1.0.apk
           rm -f android/app/keystore/tr-accounts-release.jks
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: TR-Accounts-v1.0-APK
           path: verified/TR-Accounts-v1.0.apk
